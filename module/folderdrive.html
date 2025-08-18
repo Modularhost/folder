@@ -3,83 +3,75 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Folder Drive</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <title>Gestión de Pacientes Combinados</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js"></script>
 </head>
 <body>
-    <div class="content-container">
-        <h2>Folder Drive</h2>
-        <div class="divider"></div>
+    <div class="referencias-container">
+        <h2>Gestión de Pacientes Combinados</h2>
+        <hr class="divider">
         <div class="form-container">
             <div class="filter-container-main">
                 <div class="form-group">
-                    <label for="filter-year">Año:</label>
-                    <select id="filter-year"></select>
+                    <label for="filter-year">Año</label>
+                    <select id="filter-year" autocomplete="off">
+                        <option value="all">Todos</option>
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label for="filter-month">Mes:</label>
-                    <select id="filter-month"></select>
+                    <label for="filter-month">Mes</label>
+                    <select id="filter-month" autocomplete="off">
+                        <option value="" disabled selected>Seleccione un mes</option>
+                        <option value="1">Enero</option>
+                        <option value="2">Febrero</option>
+                        <option value="3">Marzo</option>
+                        <option value="4">Abril</option>
+                        <option value="5">Mayo</option>
+                        <option value="6">Junio</option>
+                        <option value="7">Julio</option>
+                        <option value="8">Agosto</option>
+                        <option value="9">Septiembre</option>
+                        <option value="10">Octubre</option>
+                        <option value="11">Noviembre</option>
+                        <option value="12">Diciembre</option>
+                    </select>
                 </div>
-                <div id="estado-buttons" class="estado-buttons"></div>
+                <div class="estado-buttons" id="estado-buttons"></div>
             </div>
         </div>
         <div class="table-container">
-            <table id="patients-table">
+            <table id="combinados-table">
                 <thead>
                     <tr>
-                        <th>Modalidad <i class="fas fa-filter filter-icon" data-column="1"></i><div class="resize-handle"></div></th>
-                        <th>Previsión <i class="fas fa-filter filter-icon" data-column="2"></i><div class="resize-handle"></div></th>
-                        <th>Admisión <i class="fas fa-filter filter-icon" data-column="3"></i><div class="resize-handle"></div></th>
-                        <th>Nombre Paciente <i class="fas fa-filter filter-icon" data-column="4"></i><div class="resize-handle"></div></th>
-                        <th>Médico <i class="fas fa-filter filter-icon" data-column="5"></i><div class="resize-handle"></div></th>
-                        <th>Fecha CX <i class="fas fa-filter filter-icon" data-column="6"></i><div class="resize-handle"></div></th>
-                        <th>Proveedor <i class="fas fa-filter filter-icon" data-column="7"></i><div class="resize-handle"></div></th>
-                        <th>Estado <i class="fas fa-filter filter-icon" data-column="8"></i><div class="resize-handle"></div></th>
-                        <th>Total Cotización <i class="fas fa-filter filter-icon" data-column="9"></i><div class="resize-handle"></div></th>
-                        <th>Acciones <div class="resize-handle"></div></th>
+                        <th>Modalidad<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="1"></i></th>
+                        <th>Previsión<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="2"></i></th>
+                        <th>Admisión<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="3"></i></th>
+                        <th>Nombre Paciente<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="4"></i></th>
+                        <th>Médico<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="5"></i></th>
+                        <th>Fecha CX<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="6"></i></th>
+                        <th>Proveedor<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="7"></i></th>
+                        <th>Estado<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="8"></i></th>
+                        <th>Total Paciente<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="9"></i></th>
                     </tr>
                 </thead>
-                <tbody id="patients-table-body"></tbody>
+                <tbody></tbody>
             </table>
         </div>
         <div class="pagination">
-            <button id="prev-page-btn">Anterior</button>
-            <span id="page-info"></span>
-            <button id="next-page-btn">Siguiente</button>
+            <button id="prev-page-btn" disabled>Anterior</button>
+            <span id="page-info">Página 1 de 1</span>
+            <button id="next-page-btn" disabled>Siguiente</button>
         </div>
         <div id="message-container"></div>
-        <div id="loading-modal" class="modal" style="display: none;">
+        <div id="loading-modal" class="modal">
             <div class="modal-content">
                 <div class="spinner"></div>
                 <p>Cargando...</p>
             </div>
         </div>
-        <div id="upload-modal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <h3>Subir Archivo</h3>
-                <form id="upload-form">
-                    <input type="hidden" id="upload-patient-id">
-                    <input type="hidden" id="upload-collection">
-                    <div class="form-group">
-                        <input type="file" id="file-input" accept=".pdf,.doc,.docx,.jpg,.png">
-                    </div>
-                    <div class="modal-buttons">
-                        <button type="submit" class="action-button">Subir</button>
-                        <button type="button" id="cancel-upload" class="action-button cancel-button">Cancelar</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-        <div id="files-modal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <h3>Archivos del Paciente</h3>
-                <div id="files-list"></div>
-                <div class="modal-buttons">
-                    <button id="close-files-modal" class="action-button">Cerrar</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script type="module" src="js/main.js"></script>
-</body>
+        <script type="module" src="pacientes.js"></script>
+    </body>
 </html>

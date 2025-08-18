@@ -1,9 +1,27 @@
 import { getFirestore, collection, getDocs, query, where, Timestamp } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js';
-import { getStorage, ref, uploadBytes, listAll, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-storage.js';
+import { getApps, initializeApp, getApp } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js';
+import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js';
 
-export async function initFolderDrive(user) {
-    const db = getFirestore();
-    const storage = getStorage();
+const firebaseConfig = {
+  apiKey: "AIzaSyDuF7p0X6N8IE19Bqt78LQAp805tMl84Ds",
+  authDomain: "modular-app-16bd6.firebaseapp.com",
+  projectId: "modular-app-16bd6",
+  storageBucket: "modular-app-16bd6.firebasestorage.app",
+  messagingSenderId: "1006327040835",
+  appId: "1:1006327040835:web:b8b4f510da46514a3d3df6",
+  measurementId: "G-GVKBWL9GT9"
+};
+
+try {
+    let app;
+    if (!getApps().length) {
+        app = initializeApp(firebaseConfig);
+    } else {
+        app = getApp();
+    }
+
+    const db = getFirestore(app);
+    const auth = getAuth(app);
 
     async function waitForDOM() {
         return new Promise((resolve) => {
@@ -17,8 +35,8 @@ export async function initFolderDrive(user) {
 
     async function getDOMElements() {
         await waitForDOM();
-        const table = document.getElementById('patients-table');
-        const tableBody = table?.querySelector('#patients-table-body');
+        const table = document.getElementById('combinados-table');
+        const tableBody = table?.querySelector('tbody');
         const filterYearSelect = document.getElementById('filter-year');
         const filterMonthSelect = document.getElementById('filter-month');
         const estadoButtonsContainer = document.getElementById('estado-buttons');
@@ -27,15 +45,6 @@ export async function initFolderDrive(user) {
         const prevPageBtn = document.getElementById('prev-page-btn');
         const nextPageBtn = document.getElementById('next-page-btn');
         const pageInfo = document.getElementById('page-info');
-        const uploadModal = document.getElementById('upload-modal');
-        const uploadForm = document.getElementById('upload-form');
-        const fileInput = document.getElementById('file-input');
-        const uploadPatientId = document.getElementById('upload-patient-id');
-        const uploadCollection = document.getElementById('upload-collection');
-        const cancelUploadBtn = document.getElementById('cancel-upload');
-        const filesModal = document.getElementById('files-modal');
-        const filesList = document.getElementById('files-list');
-        const closeFilesModalBtn = document.getElementById('close-files-modal');
 
         const elements = {
             table,
@@ -47,16 +56,7 @@ export async function initFolderDrive(user) {
             messageContainer,
             prevPageBtn,
             nextPageBtn,
-            pageInfo,
-            uploadModal,
-            uploadForm,
-            fileInput,
-            uploadPatientId,
-            uploadCollection,
-            cancelUploadBtn,
-            filesModal,
-            filesList,
-            closeFilesModalBtn
+            pageInfo
         };
 
         Object.entries(elements).forEach(([key, el]) => {
@@ -71,7 +71,7 @@ export async function initFolderDrive(user) {
     let columnFilters = {};
     let currentPage = 1;
     const recordsPerPage = 100;
-    let initialTableWidth = 0;
+    let initialTableWidth = 0; 
 
     function showMessage(messageText, type = 'success') {
         const messageContainer = document.getElementById('message-container');
@@ -122,55 +122,46 @@ export async function initFolderDrive(user) {
     }
 
     async function loadRecords() {
+        const user = auth.currentUser;
         if (!user) throw new Error('Usuario no autenticado');
-        console.log(`Cargando registros para el usuario con UID: ${user.uid}`);
 
-        try {
-            const implantesQuery = query(
-                collection(db, 'pacientesimplantes'),
-                where('uid', '==', user.uid)
-            );
-            const implantesSnapshot = await getDocs(implantesQuery);
-            const implantes = implantesSnapshot.docs.map(doc => ({
-                id: doc.id,
-                fuente: 'Implantes',
-                ...doc.data()
-            }));
+        const implantesQuery = query(
+            collection(db, 'pacientesimplantes'),
+            where('uid', '==', user.uid)
+        );
+        const implantesSnapshot = await getDocs(implantesQuery);
+        const implantes = implantesSnapshot.docs.map(doc => ({
+            id: doc.id,
+            fuente: 'Implantes',
+            ...doc.data()
+        }));
 
-            const consignacionQuery = query(
-                collection(db, 'pacientesconsignacion'),
-                where('uid', '==', user.uid)
-            );
-            const consignacionSnapshot = await getDocs(consignacionQuery);
-            const consignaciones = consignacionSnapshot.docs.map(doc => ({
-                id: doc.id,
-                fuente: 'Consignación',
-                ...doc.data(),
-                atributo: doc.data().modalidad
-            }));
+        const consignacionQuery = query(
+            collection(db, 'pacientesconsignacion'),
+            where('uid', '==', user.uid)
+        );
+        const consignacionSnapshot = await getDocs(consignacionQuery);
+        const consignaciones = consignacionSnapshot.docs.map(doc => ({
+            id: doc.id,
+            fuente: 'Consignación',
+            ...doc.data(),
+            atributo: doc.data().modalidad 
+        }));
 
-            const records = [...implantes, ...consignaciones].map(record => ({
-                id: record.id,
-                fuente: record.fuente,
-                atributo: record.atributo || record.modalidad || 'Sin modalidad',
-                prevision: record.prevision || '',
-                admision: record.admision || '',
-                nombrePaciente: record.nombrePaciente || '',
-                medico: record.medico || '',
-                fechaCX: record.fechaCX || null,
-                proveedor: record.proveedor || '',
-                estado: record.estado || '',
-                totalCotizacion: record.totalCotizacion || record.totalPaciente || 0,
-                collection: record.fuente === 'Implantes' ? 'pacientesimplantes' : 'pacientesconsignacion'
-            }));
-
-            console.log(`Registros cargados: ${records.length} (Implantes: ${implantes.length}, Consignación: ${consignaciones.length})`);
-            console.log('Primeros 5 registros:', records.slice(0, 5));
-            return records;
-        } catch (error) {
-            console.error('Error al cargar registros:', error);
-            throw error;
-        }
+        return [...implantes, ...consignaciones].map(record => ({
+            id: record.id,
+            fuente: record.fuente,
+            atributo: record.atributo || record.modalidad || 'Sin modalidad',
+            prevision: record.prevision || '',
+            admision: record.admision || '',
+            nombrePaciente: record.nombrePaciente || '',
+            medico: record.medico || '',
+            fechaCX: record.fechaCX || null,
+            proveedor: record.proveedor || '',
+            estado: record.estado || '',
+            totalCotizacion: record.totalCotizacion || record.totalPaciente || 0,
+            collection: record.fuente === 'Implantes' ? 'pacientesimplantes' : 'pacientesconsignacion'
+        }));
     }
 
     function getYearsAndMonths(records) {
@@ -197,10 +188,7 @@ export async function initFolderDrive(user) {
 
     function populateYearFilter(years) {
         const filterYearSelect = document.getElementById('filter-year');
-        if (!filterYearSelect) {
-            console.warn('No se encontró el elemento filter-year');
-            return;
-        }
+        if (!filterYearSelect) return;
         filterYearSelect.innerHTML = '<option value="all">Todos</option>';
         years.forEach(year => {
             const option = document.createElement('option');
@@ -210,15 +198,11 @@ export async function initFolderDrive(user) {
         });
         const currentYear = new Date().getFullYear();
         filterYearSelect.value = years.includes(currentYear) ? currentYear.toString() : 'all';
-        console.log(`Año seleccionado por defecto: ${filterYearSelect.value}`);
     }
 
-    function populateMonthFilter(months, selectedMonth = 'all') {
+    function populateMonthFilter(months, selectedMonth = '') {
         const filterMonthSelect = document.getElementById('filter-month');
-        if (!filterMonthSelect) {
-            console.warn('No se encontró el elemento filter-month');
-            return;
-        }
+        if (!filterMonthSelect) return;
         const monthNames = [
             { value: '1', name: 'Enero' },
             { value: '2', name: 'Febrero' },
@@ -235,42 +219,26 @@ export async function initFolderDrive(user) {
         ];
         const validMonths = Array.isArray(months) ? months : [];
         filterMonthSelect.innerHTML = `
-            <option value="all">Todos</option>
+            <option value="" disabled selected>Seleccione un mes</option>
             ${monthNames
                 .filter(month => validMonths.includes(parseInt(month.value)))
                 .map(month => `<option value="${month.value}">${month.name}</option>`)
                 .join('')}
         `;
-        filterMonthSelect.value = validMonths.includes(parseInt(selectedMonth)) ? selectedMonth : 'all';
-        console.log(`Mes seleccionado por defecto: ${filterMonthSelect.value}`);
+        filterMonthSelect.value = validMonths.includes(parseInt(selectedMonth)) ? selectedMonth : '';
     }
 
     function filterRecords(records, year, month, estado) {
-        console.log(`Filtrando registros - Año: ${year}, Mes: ${month}, Estado: ${estado}`);
-        const filtered = records.filter(record => {
-            let matches = true;
-
-            if (!(record.fechaCX instanceof Timestamp) || isNaN(record.fechaCX.toDate().getTime())) {
-                console.warn(`Registro ${record.id} ignorado: fechaCX no es un Timestamp válido`);
-                matches = false;
-            } else {
-                const date = record.fechaCX.toDate();
-                date.setHours(0, 0, 0, 0);
-                const recordYear = date.getFullYear();
-                const recordMonth = date.getMonth() + 1;
-
-                if (year !== 'all' && recordYear !== parseInt(year)) {
-                    matches = false;
-                }
-                if (month !== 'all' && month !== '' && recordMonth !== parseInt(month)) {
-                    matches = false;
-                }
-            }
-
-            if (estado && record.estado !== estado) {
-                matches = false;
-            }
-
+        if (month === '') return [];
+        return records.filter(record => {
+            if (!(record.fechaCX instanceof Timestamp) || isNaN(record.fechaCX.toDate().getTime())) return false;
+            const date = record.fechaCX.toDate();
+            date.setHours(0, 0, 0, 0);
+            const recordYear = date.getFullYear();
+            const recordMonth = date.getMonth() + 1;
+            if (year !== 'all' && recordYear !== parseInt(year)) return false;
+            if (month && recordMonth !== parseInt(month)) return false;
+            if (estado && record.estado !== estado) return false;
             const fields = [
                 'atributo',
                 'prevision',
@@ -282,9 +250,9 @@ export async function initFolderDrive(user) {
                 'estado',
                 'totalCotizacion'
             ];
-            matches = matches && Object.entries(columnFilters).every(([index, filterValue]) => {
+            return Object.entries(columnFilters).every(([index, filterValue]) => {
                 if (!filterValue) return true;
-                const field = fields[parseInt(index)];
+                const field = fields[parseInt(index)]; 
                 let value;
                 try {
                     switch (field) {
@@ -303,20 +271,12 @@ export async function initFolderDrive(user) {
                     return false;
                 }
             });
-
-            return matches;
         });
-        console.log(`Registros filtrados: ${filtered.length}`);
-        console.log('Primeros 5 registros filtrados:', filtered.slice(0, 5));
-        return filtered;
     }
 
     function renderEstadoButtons(records) {
         const estadoButtonsContainer = document.getElementById('estado-buttons');
-        if (!estadoButtonsContainer) {
-            console.warn('No se encontró el elemento estado-buttons');
-            return;
-        }
+        if (!estadoButtonsContainer) return;
         estadoButtonsContainer.innerHTML = '';
         const estados = Array.from(new Set(records.map(record => record.estado || 'Sin estado'))).sort();
         if (estados.length === 0) {
@@ -334,7 +294,7 @@ export async function initFolderDrive(user) {
                 const filterYearSelect = document.getElementById('filter-year');
                 const filterMonthSelect = document.getElementById('filter-month');
                 const selectedYear = filterYearSelect?.value || 'all';
-                const selectedMonth = filterMonthSelect?.value || 'all';
+                const selectedMonth = filterMonthSelect?.value || '';
                 const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                 renderRecords(filteredRecords);
                 renderEstadoButtons(filteredRecords);
@@ -345,14 +305,11 @@ export async function initFolderDrive(user) {
     }
 
     function renderRecords(records) {
-        const tableBody = document.querySelector('#patients-table-body');
-        if (!tableBody) {
-            console.warn('No se encontró el elemento patients-table-body');
-            return;
-        }
+        const tableBody = document.querySelector('#combinados-table tbody');
+        if (!tableBody) return;
         tableBody.innerHTML = '';
         if (records.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="10" class="text-center">No hay datos para mostrar. ${allRecords.length === 0 ? 'No se encontraron registros en la base de datos.' : 'Ajuste los filtros para ver los registros.'}</td></tr>`;
+            tableBody.innerHTML = '<tr><td colspan="9" class="text-center">No hay datos para mostrar. Seleccione un mes para ver los registros.</td></tr>';
             return;
         }
         const sortedRecords = records.sort((a, b) => {
@@ -378,32 +335,33 @@ export async function initFolderDrive(user) {
                 <td>${record.proveedor}</td>
                 <td>${record.estado}</td>
                 <td>${formatNumberWithThousands(record.totalCotizacion)}</td>
-                <td>
-                    <button class="action-button upload-button" data-id="${record.id}" data-collection="${record.collection}" title="Subir archivo">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                    </button>
-                    <button class="action-button folder-button" data-id="${record.id}" data-collection="${record.collection}" title="Ver carpeta">
-                        <i class="fas fa-folder-open"></i>
-                    </button>
-                </td>
             `;
             tableBody.appendChild(row);
         });
-        console.log(`Registros renderizados: ${paginatedRecords.length}`);
         setupColumnFilters();
         setupResizeHandles();
-        setupActionButtons();
     }
 
+
     function initializeColumnWidths() {
-        const initialWidths = ['80px', '100px', '80px', '120px', '120px', '80px', '100px', '100px', '80px', '120px'];
-        const headers = document.querySelectorAll('#patients-table th');
-        const table = document.getElementById('patients-table');
+        const initialWidths = [
+            '80px', 
+            '100px', 
+            '80px', 
+            '120px', 
+            '120px', 
+            '80px', 
+            '100px',
+            '100px', 
+            '80px'  
+        ];
+        const headers = document.querySelectorAll('#combinados-table th');
+        const table = document.getElementById('combinados-table');
         headers.forEach((header, index) => {
             const width = initialWidths[index] || '100px';
             header.style.width = width;
             header.style.minWidth = width;
-            document.querySelectorAll(`#patients-table td:nth-child(${index + 1})`).forEach(cell => {
+            document.querySelectorAll(`#combinados-table td:nth-child(${index + 1})`).forEach(cell => {
                 cell.style.width = width;
                 cell.style.minWidth = width;
             });
@@ -417,7 +375,7 @@ export async function initFolderDrive(user) {
     function setupColumnFilters() {
         const filterIcons = document.querySelectorAll('.filter-icon');
         const tableContainer = document.querySelector('.table-container');
-        const headers = document.querySelectorAll('#patients-table th');
+        const headers = document.querySelectorAll('#combinados-table th');
         if (!tableContainer || filterIcons.length === 0) {
             console.warn('No se encontraron íconos de filtro o table-container');
             return;
@@ -430,13 +388,13 @@ export async function initFolderDrive(user) {
             });
         }
         filterIcons.forEach(icon => {
-            icon.removeEventListener('click', handleFilterIconClick);
+            icon.removeEventListener('click', handleFilterIconClick); 
             icon.addEventListener('click', handleFilterIconClick);
         });
 
         function handleFilterIconClick(e) {
             e.stopPropagation();
-            const columnIndex = parseInt(e.target.getAttribute('data-column')) - 1;
+            const columnIndex = parseInt(e.target.getAttribute('data-column')) - 1; 
             const th = e.target.parentElement;
             const existingContainer = document.querySelector('.filter-container');
 
@@ -446,17 +404,17 @@ export async function initFolderDrive(user) {
 
             const container = document.createElement('div');
             container.className = 'filter-container';
-
+            
             const clearButton = document.createElement('button');
             clearButton.className = 'clear-filter-button';
             clearButton.textContent = 'Borrar Filtro';
-            clearButton.disabled = !columnFilters[columnIndex];
+            clearButton.disabled = !columnFilters[columnIndex]; 
             clearButton.addEventListener('click', () => {
                 columnFilters[columnIndex] = '';
                 const filterYearSelect = document.getElementById('filter-year');
                 const filterMonthSelect = document.getElementById('filter-month');
                 const selectedYear = filterYearSelect?.value || 'all';
-                const selectedMonth = filterMonthSelect?.value || 'all';
+                const selectedMonth = filterMonthSelect?.value || '';
                 const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                 renderRecords(filteredRecords);
                 renderEstadoButtons(filteredRecords);
@@ -493,7 +451,7 @@ export async function initFolderDrive(user) {
                     const filterYearSelect = document.getElementById('filter-year');
                     const filterMonthSelect = document.getElementById('filter-month');
                     const selectedYear = filterYearSelect?.value || 'all';
-                    const selectedMonth = filterMonthSelect?.value || 'all';
+                    const selectedMonth = filterMonthSelect?.value || '';
                     const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                     renderRecords(filteredRecords);
                     renderEstadoButtons(filteredRecords);
@@ -502,7 +460,7 @@ export async function initFolderDrive(user) {
                         header.classList.toggle('filter-active', !!columnFilters[idx]);
                         header.title = columnFilters[idx] ? `Filtro: ${columnFilters[idx]}` : '';
                     });
-                    clearButton.disabled = !columnFilters[columnIndex];
+                    clearButton.disabled = !columnFilters[columnIndex]; 
                 }, 300);
             });
             input.addEventListener('keydown', (e) => {
@@ -511,7 +469,7 @@ export async function initFolderDrive(user) {
                     const filterYearSelect = document.getElementById('filter-year');
                     const filterMonthSelect = document.getElementById('filter-month');
                     const selectedYear = filterYearSelect?.value || 'all';
-                    const selectedMonth = filterMonthSelect?.value || 'all';
+                    const selectedMonth = filterMonthSelect?.value || '';
                     const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                     renderRecords(filteredRecords);
                     renderEstadoButtons(filteredRecords);
@@ -527,7 +485,7 @@ export async function initFolderDrive(user) {
             input.focus();
         }
 
-        document.removeEventListener('click', handleOutsideClick);
+        document.removeEventListener('click', handleOutsideClick); 
         document.addEventListener('click', handleOutsideClick);
 
         function handleOutsideClick(e) {
@@ -538,7 +496,7 @@ export async function initFolderDrive(user) {
     }
 
     function setupResizeHandles() {
-        const table = document.getElementById('patients-table');
+        const table = document.getElementById('combinados-table');
         const thElements = table?.querySelectorAll('th');
         if (!table || thElements.length === 0) {
             console.warn('Tabla o encabezados no encontrados para redimensionamiento.');
@@ -562,7 +520,7 @@ export async function initFolderDrive(user) {
                     const newWidth = Math.max(50, Math.min(500, startWidth + (e.clientX - startX)));
                     th.style.width = `${newWidth}px`;
                     th.style.minWidth = `${newWidth}px`;
-                    document.querySelectorAll(`#patients-table td:nth-child(${index + 1})`).forEach(cell => {
+                    document.querySelectorAll(`#combinados-table td:nth-child(${index + 1})`).forEach(cell => {
                         cell.style.width = `${newWidth}px`;
                         cell.style.minWidth = `${newWidth}px`;
                     });
@@ -570,7 +528,7 @@ export async function initFolderDrive(user) {
                         if (idx !== index) {
                             header.style.width = `${columnWidths[idx]}px`;
                             header.style.minWidth = `${columnWidths[idx]}px`;
-                            document.querySelectorAll(`#patients-table td:nth-child(${idx + 1})`).forEach(cell => {
+                            document.querySelectorAll(`#combinados-table td:nth-child(${idx + 1})`).forEach(cell => {
                                 cell.style.width = `${columnWidths[idx]}px`;
                                 cell.style.minWidth = `${columnWidths[idx]}px`;
                             });
@@ -581,6 +539,7 @@ export async function initFolderDrive(user) {
                         const width = idx === index ? newWidth : columnWidths[idx];
                         totalWidth += width;
                     });
+
                     table.style.minWidth = `${Math.max(totalWidth, initialTableWidth)}px`;
                 };
                 const onMouseUp = () => {
@@ -594,40 +553,6 @@ export async function initFolderDrive(user) {
         });
     }
 
-    async function setupActionButtons() {
-        const uploadButtons = document.querySelectorAll('.upload-button');
-        const folderButtons = document.querySelectorAll('.folder-button');
-
-        uploadButtons.forEach(button => {
-            button.removeEventListener('click', handleUploadClick);
-            button.addEventListener('click', handleUploadClick);
-        });
-
-        folderButtons.forEach(button => {
-            button.removeEventListener('click', handleFolderClick);
-            button.addEventListener('click', handleFolderClick);
-        });
-
-        function handleUploadClick(e) {
-            const id = e.currentTarget.getAttribute('data-id');
-            const collection = e.currentTarget.getAttribute('data-collection');
-            const uploadModal = document.getElementById('upload-modal');
-            const uploadPatientId = document.getElementById('upload-patient-id');
-            const uploadCollection = document.getElementById('upload-collection');
-            if (uploadModal && uploadPatientId && uploadCollection) {
-                uploadPatientId.value = id;
-                uploadCollection.value = collection;
-                uploadModal.style.display = 'flex';
-            }
-        }
-
-        async function handleFolderClick(e) {
-            const id = e.currentTarget.getAttribute('data-id');
-            const collection = e.currentTarget.getAttribute('data-collection');
-            await showFilesModal(id, collection);
-        }
-    }
-
     async function showLoadingModal(show) {
         const loadingModal = document.getElementById('loading-modal');
         if (loadingModal) {
@@ -636,6 +561,7 @@ export async function initFolderDrive(user) {
     }
 
     async function checkUserPermissions() {
+        const user = auth.currentUser;
         if (!user) return false;
         try {
             const { getDoc, doc } = await import('https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js');
@@ -653,85 +579,6 @@ export async function initFolderDrive(user) {
             console.error(`Error al verificar permisos: ${error.message}`);
             showMessage(`Error al verificar permisos: ${error.message}`, 'error');
             return false;
-        }
-    }
-
-    async function setupUploadForm() {
-        const uploadForm = document.getElementById('upload-form');
-        const cancelUploadBtn = document.getElementById('cancel-upload');
-        if (!uploadForm || !cancelUploadBtn) return;
-
-        uploadForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const fileInput = document.getElementById('file-input');
-            const patientId = document.getElementById('upload-patient-id').value;
-            const collection = document.getElementById('upload-collection').value;
-            const file = fileInput.files[0];
-            if (!file) {
-                showMessage('Por favor, seleccione un archivo.', 'error');
-                return;
-            }
-            await showLoadingModal(true);
-            try {
-                const storagePath = `presupuestos/${user.uid}/${collection}/${patientId}/${file.name}`;
-                const fileRef = ref(storage, storagePath);
-                await uploadBytes(fileRef, file);
-                showMessage('Archivo subido exitosamente.', 'success');
-                document.getElementById('upload-modal').style.display = 'none';
-                uploadForm.reset();
-            } catch (error) {
-                console.error('Error al subir archivo:', error);
-                showMessage(`Error al subir archivo: ${error.message}`, 'error');
-            } finally {
-                await showLoadingModal(false);
-            }
-        });
-
-        cancelUploadBtn.addEventListener('click', () => {
-            document.getElementById('upload-modal').style.display = 'none';
-            uploadForm.reset();
-        });
-    }
-
-    async function showFilesModal(patientId, collection) {
-        const filesModal = document.getElementById('files-modal');
-        const filesList = document.getElementById('files-list');
-        if (!filesModal || !filesList) return;
-
-        filesList.innerHTML = '';
-        await showLoadingModal(true);
-        try {
-            const storagePath = `presupuestos/${user.uid}/${collection}/${patientId}/`;
-            const folderRef = ref(storage, storagePath);
-            const fileList = await listAll(folderRef);
-            if (fileList.items.length === 0) {
-                filesList.innerHTML = '<p>No hay archivos subidos para este paciente.</p>';
-            } else {
-                for (const itemRef of fileList.items) {
-                    const url = await getDownloadURL(itemRef);
-                    const fileName = itemRef.name;
-                    const fileItem = document.createElement('a');
-                    fileItem.href = url;
-                    fileItem.textContent = fileName;
-                    fileItem.target = '_blank';
-                    filesList.appendChild(fileItem);
-                }
-            }
-            filesModal.style.display = 'flex';
-        } catch (error) {
-            console.error('Error al listar archivos:', error);
-            showMessage(`Error al listar archivos: ${error.message}`, 'error');
-        } finally {
-            await showLoadingModal(false);
-        }
-    }
-
-    function setupFilesModal() {
-        const closeFilesModalBtn = document.getElementById('close-files-modal');
-        if (closeFilesModalBtn) {
-            closeFilesModalBtn.addEventListener('click', () => {
-                document.getElementById('files-modal').style.display = 'none';
-            });
         }
     }
 
@@ -756,7 +603,7 @@ export async function initFolderDrive(user) {
                     const filterYearSelect = document.getElementById('filter-year');
                     const filterMonthSelect = document.getElementById('filter-month');
                     const selectedYear = filterYearSelect?.value || 'all';
-                    const selectedMonth = filterMonthSelect?.value || 'all';
+                    const selectedMonth = filterMonthSelect?.value || '';
                     const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                     renderRecords(filteredRecords);
                     updatePagination(filteredRecords);
@@ -771,7 +618,7 @@ export async function initFolderDrive(user) {
                     const filterYearSelect = document.getElementById('filter-year');
                     const filterMonthSelect = document.getElementById('filter-month');
                     const selectedYear = filterYearSelect?.value || 'all';
-                    const selectedMonth = filterMonthSelect?.value || 'all';
+                    const selectedMonth = filterMonthSelect?.value || '';
                     const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                     renderRecords(filteredRecords);
                     updatePagination(filteredRecords);
@@ -789,29 +636,25 @@ export async function initFolderDrive(user) {
         await showLoadingModal(true);
         try {
             allRecords = await loadRecords();
-            if (allRecords.length === 0) {
-                showMessage('No se encontraron registros en la base de datos.', 'error');
-            }
             const { years, monthsByYear } = getYearsAndMonths(allRecords);
             let selectedYear, selectedMonth;
             if (!preserveFilters) {
                 populateYearFilter(years);
                 selectedYear = filterYearSelect?.value || 'all';
-                populateMonthFilter(monthsByYear[selectedYear] || [], 'all');
-                selectedMonth = 'all';
-                if (filterMonthSelect) filterMonthSelect.value = 'all';
+                populateMonthFilter(monthsByYear[selectedYear] || []);
+                selectedMonth = '';
+                if (filterMonthSelect) filterMonthSelect.value = '';
                 selectedEstado = '';
                 columnFilters = {};
             } else {
                 selectedYear = filterYearSelect?.value || 'all';
-                selectedMonth = filterMonthSelect?.value || 'all';
+                selectedMonth = filterMonthSelect?.value || '';
                 populateMonthFilter(monthsByYear[selectedYear] || [], selectedMonth);
                 if (filterMonthSelect) {
-                    filterMonthSelect.value = (selectedMonth && monthsByYear[selectedYear]?.includes(parseInt(selectedMonth))) ? selectedMonth : 'all';
+                    filterMonthSelect.value = (selectedMonth && monthsByYear[selectedYear]?.includes(parseInt(selectedMonth))) ? selectedMonth : '';
                 }
-                selectedMonth = filterMonthSelect?.value || 'all';
+                selectedMonth = filterMonthSelect?.value || '';
             }
-            console.log(`Cargando tabla con Año: ${selectedYear}, Mes: ${selectedMonth}, Estado: ${selectedEstado}`);
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
             renderRecords(filteredRecords);
             renderEstadoButtons(filteredRecords);
@@ -828,17 +671,13 @@ export async function initFolderDrive(user) {
     function setupFilterListeners() {
         const filterYearSelect = document.getElementById('filter-year');
         const filterMonthSelect = document.getElementById('filter-month');
-        if (!filterYearSelect || !filterMonthSelect) {
-            console.warn('No se encontraron los elementos filter-year o filter-month');
-            return;
-        }
+        if (!filterYearSelect || !filterMonthSelect) return;
         filterYearSelect.addEventListener('change', () => {
             const selectedYear = filterYearSelect.value;
             const months = getYearsAndMonths(allRecords).monthsByYear[selectedYear] || [];
-            populateMonthFilter(months, 'all');
+            populateMonthFilter(months);
             selectedEstado = '';
-            const selectedMonth = filterMonthSelect.value || 'all';
-            console.log(`Cambio de año - Año: ${selectedYear}, Mes: ${selectedMonth}, Estado: ${selectedEstado}`);
+            const selectedMonth = filterMonthSelect.value || '';
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
             currentPage = 1;
             renderRecords(filteredRecords);
@@ -849,7 +688,6 @@ export async function initFolderDrive(user) {
             const selectedYear = filterYearSelect.value;
             const selectedMonth = filterMonthSelect.value;
             selectedEstado = '';
-            console.log(`Cambio de mes - Año: ${selectedYear}, Mes: ${selectedMonth}, Estado: ${selectedEstado}`);
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
             currentPage = 1;
             renderRecords(filteredRecords);
@@ -860,16 +698,25 @@ export async function initFolderDrive(user) {
 
     async function init() {
         try {
-            const hasPermissions = await checkUserPermissions();
-            if (!hasPermissions) {
-                showMessage('No tienes permisos para gestionar pacientesimplantes o pacientesconsignacion.', 'error');
-                return;
-            }
+            await new Promise((resolve, reject) => {
+                onAuthStateChanged(auth, async user => {
+                    if (user) {
+                        const hasPermissions = await checkUserPermissions();
+                        if (!hasPermissions) {
+                            showMessage('No tienes permisos para gestionar pacientesimplantes o pacientesconsignacion.', 'error');
+                            reject(new Error('Usuario sin permisos'));
+                            return;
+                        }
+                        resolve();
+                    } else {
+                        showMessage('Usuario no autenticado. Por favor, inicia sesión.', 'error');
+                        reject(new Error('Usuario no autenticado'));
+                    }
+                });
+            });
             await waitForDOM();
             await Promise.all([
                 setupFilterListeners(),
-                setupUploadForm(),
-                setupFilesModal(),
                 loadAndRenderRecords()
             ]);
             initializeColumnWidths();
@@ -881,34 +728,8 @@ export async function initFolderDrive(user) {
     }
 
     init();
+} catch (error) {
+    console.error('Error crítico al cargar la aplicación:', error);
+    showMessage('Error crítico al cargar la aplicación. Contacta al soporte técnico.', 'error');
 
-    window.addEventListener('moduleCleanup', () => {
-        document.querySelectorAll('.filter-icon').forEach(icon => {
-            icon.replaceWith(icon.cloneNode(true));
-        });
-        document.querySelectorAll('.estado-button').forEach(button => {
-            button.replaceWith(button.cloneNode(true));
-        });
-        document.querySelectorAll('.upload-button, .folder-button').forEach(button => {
-            button.replaceWith(button.cloneNode(true));
-        });
-        document.querySelectorAll('#prev-page-btn, #next-page-btn, #cancel-upload, #close-files-modal').forEach(button => {
-            button.replaceWith(button.cloneNode(true));
-        });
-        document.removeEventListener('click', handleOutsideClick);
-        const uploadForm = document.getElementById('upload-form');
-        if (uploadForm) {
-            uploadForm.replaceWith(uploadForm.cloneNode(true));
-        }
-    });
-
-    function handleOutsideClick(e) {
-        if (!e.target.closest('.filter-container') && !e.target.classList.contains('filter-icon')) {
-            document.querySelectorAll('.filter-container').forEach(container => container.remove());
-            document.querySelectorAll('#patients-table th').forEach((header, idx) => {
-                header.classList.toggle('filter-active', !!columnFilters[idx]);
-                header.title = columnFilters[idx] ? `Filtro: ${columnFilters[idx]}` : '';
-            });
-        }
-    }
 }
