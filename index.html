@@ -10,16 +10,31 @@
   <link rel="icon" href="data:,">
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
-  <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-    <h1 class="text-2xl font-bold mb-6 text-center">Subir PDF o Imagen a Firebase</h1>
-    <input type="file" id="fileInput" accept="image/*,application/pdf" class="mb-4 w-full p-2 border rounded">
-    <button id="uploadButton" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Subir Archivo</button>
-    <p id="status" class="mt-4 text-center"></p>
-    <a id="fileUrl" href="#" target="_blank" class="mt-2 text-blue-500 hidden">Ver archivo subido</a>
+  <!-- Formulario de Inicio de Sesión -->
+  <div id="loginForm" class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-6 text-center">Iniciar Sesión</h1>
+    <input type="text" id="usernameInput" placeholder="RUT (ej. 19433769)" class="mb-4 w-full p-2 border rounded">
+    <input type="password" id="passwordInput" placeholder="Contraseña" class="mb-4 w-full p-2 border rounded">
+    <button id="loginButton" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Iniciar Sesión</button>
+    <p id="loginStatus" class="mt-4 text-center"></p>
   </div>
-  <!-- Firebase SDK y script principal como módulos -->
+
+  <!-- Modal para Subir Archivos -->
+  <div id="uploadModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
+    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+      <h1 class="text-2xl font-bold mb-6 text-center">Subir PDF o Imagen</h1>
+      <input type="file" id="fileInput" accept="image/*,application/pdf" class="mb-4 w-full p-2 border rounded">
+      <button id="uploadButton" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Subir Archivo</button>
+      <button id="closeModal" class="mt-4 w-full bg-gray-300 text-black py-2 rounded hover:bg-gray-400">Cerrar</button>
+      <p id="status" class="mt-4 text-center"></p>
+      <a id="fileUrl" href="#" target="_blank" class="mt-2 text-blue-500 hidden">Ver archivo subido</a>
+    </div>
+  </div>
+
+  <!-- Firebase SDK -->
   <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"></script>
   <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js"></script>
+  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"></script>
   <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js"></script>
   <script type="module" src="script.js"></script>
 </body>
