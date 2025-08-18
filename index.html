@@ -1,41 +1,89 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Subir Archivos a Firebase</title>
-  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
-  <!-- Favicon para evitar el error 404 -->
-  <link rel="icon" href="data:,">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modular-App</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="icon" href="img/logo-empresa.png" type="image/x-icon">
+    <link rel="stylesheet" href="styles.css">
 </head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-  <!-- Formulario de Inicio de Sesión -->
-  <div id="loginForm" class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-    <h1 class="text-2xl font-bold mb-6 text-center">Iniciar Sesión</h1>
-    <input type="text" id="usernameInput" placeholder="RUT (ej. 19433769)" class="mb-4 w-full p-2 border rounded">
-    <input type="password" id="passwordInput" placeholder="Contraseña" class="mb-4 w-full p-2 border rounded">
-    <button id="loginButton" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Iniciar Sesión</button>
-    <p id="loginStatus" class="mt-4 text-center"></p>
-  </div>
 
-  <!-- Modal para Subir Archivos -->
-  <div id="uploadModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center hidden">
-    <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
-      <h1 class="text-2xl font-bold mb-6 text-center">Subir PDF o Imagen</h1>
-      <input type="file" id="fileInput" accept="image/*,application/pdf" class="mb-4 w-full p-2 border rounded">
-      <button id="uploadButton" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Subir Archivo</button>
-      <button id="closeModal" class="mt-4 w-full bg-gray-300 text-black py-2 rounded hover:bg-gray-400">Cerrar</button>
-      <p id="status" class="mt-4 text-center"></p>
-      <a id="fileUrl" href="#" target="_blank" class="mt-2 text-blue-500 hidden">Ver archivo subido</a>
+<body class="dark-mode">
+    <div id="particles-js"></div>
+    <header class="header">
+        <img src="img/logo-empresa.png" alt="Logo OverDrive" class="header-logo">
+        <div class="header-actions">
+            <button id="toggle-mode" title="Cambiar modo" class="toggle-mode">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button id="login-btn" class="login-btn">
+                Iniciar Sesión
+            </button>
+        </div>
+    </header>
+    <main class="main-content">
+        <h1 class="main-title">Modular-App</h1>
+        <p class="main-text">
+            Bienvenido a <strong>Modular-App</strong>, una solución integral desarrollada por OverDrive para el control
+            eficiente de insumos, inventarios, registros operativos y administrativos. Esta plataforma está diseñada
+            para facilitar el seguimiento de ingresos y egresos, listar precios, gestionar datos de empresas, pacientes
+            y programaciones quirúrgicas.
+        </p>
+        <p class="main-text">
+            Modular-App permite estructurar y optimizar la información operativa a través de módulos adaptables,
+            brindando una experiencia precisa, centralizada y dinámica. Ideal para entornos clínicos, logísticos o
+            administrativos que requieren trazabilidad y control riguroso.
+        </p>
+        <p class="main-text">
+            <strong>Sobre Modular-App:</strong> El nombre hace referencia a su arquitectura modular, lo que permite
+            adaptarse fácilmente a distintas necesidades operacionales. Desarrollado por <strong>OverDrive</strong>,
+            esta plataforma representa el compromiso con la innovación tecnológica, el rendimiento y la eficiencia
+            digital aplicada al entorno organizacional.
+        </p>
+        <div class="info">
+            <p><strong>Versión:</strong> 1.00.8</p>
+            <p><strong>Fecha:</strong> 25-Julio-2025</p>
+            <p><strong>Propósito:</strong> Control de inventarios, gestión de insumos, precios, datos clínicos y
+                procesos operativos</p>
+            <p><strong>Desarrollador:</strong> OverDrive</p>
+        </div>
+    </main>
+
+    <div id="login-modal" class="login-modal hidden">
+        <div class="login-modal-content">
+            <h2 class="modal-title">Iniciar Sesión</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username" class="form-label">Nombre de Usuario</label>
+                    <input type="text" id="username" name="username" placeholder="Ingrese su nombre de usuario" required
+                        autocomplete="off" class="form-input" />
+                </div>
+                <div class="form-group">
+                    <label for="password" class="form-label">Contraseña</label>
+                    <div class="password-container">
+                        <input type="password" id="password" name="password" placeholder="Ingrese su contraseña"
+                            required autocomplete="new-password" class="form-input" />
+                        <i class="fas fa-eye password-toggle" id="password-toggle"></i>
+                    </div>
+                    <div id="caps-lock-message" class="caps-lock-message hidden">Mayúsculas activadas</div>
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" id="modal-login-btn" class="modal-login-btn">
+                        Ingresar
+                    </button>
+                    <button type="button" id="close-modal" class="close-modal">
+                        Cerrar
+                    </button>
+                </div>
+                <div id="error-message" class="error-message hidden"></div>
+            </form>
+        </div>
     </div>
-  </div>
-
-  <!-- Firebase SDK -->
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"></script>
-  <script type="module" src="https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js"></script>
-  <script type="module" src="script.js"></script>
+    <script src="https://cdn.jsdelivr.net/particles.js/2.0.0/particles.min.js"></script>
+    <script type="module" src="script.js"></script>
 </body>
+
 </html>
