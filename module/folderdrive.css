@@ -474,6 +474,38 @@ body.dark-mode .action-button:hover {
     background-color: var(--dark-primary-hover);
 }
 
+.upload-button {
+    background-color: var(--success);
+}
+
+.upload-button:hover {
+    background-color: var(--success-hover);
+}
+
+body.dark-mode .upload-button {
+    background-color: var(--dark-success);
+}
+
+body.dark-mode .upload-button:hover {
+    background-color: var(--dark-success-hover);
+}
+
+.folder-button {
+    background-color: var(--primary);
+}
+
+.folder-button:hover {
+    background-color: var(--primary-hover);
+}
+
+body.dark-mode .folder-button {
+    background-color: var(--dark-primary);
+}
+
+body.dark-mode .folder-button:hover {
+    background-color: var(--dark-primary-hover);
+}
+
 .cancel-button {
     background-color: #6b7280;
 }

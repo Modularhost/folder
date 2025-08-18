@@ -197,7 +197,10 @@ export async function initFolderDrive(user) {
 
     function populateYearFilter(years) {
         const filterYearSelect = document.getElementById('filter-year');
-        if (!filterYearSelect) return;
+        if (!filterYearSelect) {
+            console.warn('No se encontró el elemento filter-year');
+            return;
+        }
         filterYearSelect.innerHTML = '<option value="all">Todos</option>';
         years.forEach(year => {
             const option = document.createElement('option');
@@ -207,11 +210,15 @@ export async function initFolderDrive(user) {
         });
         const currentYear = new Date().getFullYear();
         filterYearSelect.value = years.includes(currentYear) ? currentYear.toString() : 'all';
+        console.log(`Año seleccionado por defecto: ${filterYearSelect.value}`);
     }
 
     function populateMonthFilter(months, selectedMonth = 'all') {
         const filterMonthSelect = document.getElementById('filter-month');
-        if (!filterMonthSelect) return;
+        if (!filterMonthSelect) {
+            console.warn('No se encontró el elemento filter-month');
+            return;
+        }
         const monthNames = [
             { value: '1', name: 'Enero' },
             { value: '2', name: 'Febrero' },
@@ -235,6 +242,7 @@ export async function initFolderDrive(user) {
                 .join('')}
         `;
         filterMonthSelect.value = validMonths.includes(parseInt(selectedMonth)) ? selectedMonth : 'all';
+        console.log(`Mes seleccionado por defecto: ${filterMonthSelect.value}`);
     }
 
     function filterRecords(records, year, month, estado) {
@@ -243,6 +251,7 @@ export async function initFolderDrive(user) {
             let matches = true;
 
             if (!(record.fechaCX instanceof Timestamp) || isNaN(record.fechaCX.toDate().getTime())) {
+                console.warn(`Registro ${record.id} ignorado: fechaCX no es un Timestamp válido`);
                 matches = false;
             } else {
                 const date = record.fechaCX.toDate();
@@ -298,12 +307,16 @@ export async function initFolderDrive(user) {
             return matches;
         });
         console.log(`Registros filtrados: ${filtered.length}`);
+        console.log('Primeros 5 registros filtrados:', filtered.slice(0, 5));
         return filtered;
     }
 
     function renderEstadoButtons(records) {
         const estadoButtonsContainer = document.getElementById('estado-buttons');
-        if (!estadoButtonsContainer) return;
+        if (!estadoButtonsContainer) {
+            console.warn('No se encontró el elemento estado-buttons');
+            return;
+        }
         estadoButtonsContainer.innerHTML = '';
         const estados = Array.from(new Set(records.map(record => record.estado || 'Sin estado'))).sort();
         if (estados.length === 0) {
@@ -333,7 +346,10 @@ export async function initFolderDrive(user) {
 
     function renderRecords(records) {
         const tableBody = document.querySelector('#patients-table-body');
-        if (!tableBody) return;
+        if (!tableBody) {
+            console.warn('No se encontró el elemento patients-table-body');
+            return;
+        }
         tableBody.innerHTML = '';
         if (records.length === 0) {
             tableBody.innerHTML = `<tr><td colspan="10" class="text-center">No hay datos para mostrar. ${allRecords.length === 0 ? 'No se encontraron registros en la base de datos.' : 'Ajuste los filtros para ver los registros.'}</td></tr>`;
@@ -373,8 +389,10 @@ export async function initFolderDrive(user) {
             `;
             tableBody.appendChild(row);
         });
+        console.log(`Registros renderizados: ${paginatedRecords.length}`);
         setupColumnFilters();
         setupResizeHandles();
+        setupActionButtons();
     }
 
     function initializeColumnWidths() {
@@ -581,27 +599,33 @@ export async function initFolderDrive(user) {
         const folderButtons = document.querySelectorAll('.folder-button');
 
         uploadButtons.forEach(button => {
-            button.addEventListener('click', () => {
-                const id = button.getAttribute('data-id');
-                const collection = button.getAttribute('data-collection');
-                const uploadModal = document.getElementById('upload-modal');
-                const uploadPatientId = document.getElementById('upload-patient-id');
-                const uploadCollection = document.getElementById('upload-collection');
-                if (uploadModal && uploadPatientId && uploadCollection) {
-                    uploadPatientId.value = id;
-                    uploadCollection.value = collection;
-                    uploadModal.style.display = 'flex';
-                }
-            });
+            button.removeEventListener('click', handleUploadClick);
+            button.addEventListener('click', handleUploadClick);
         });
 
         folderButtons.forEach(button => {
-            button.addEventListener('click', async () => {
-                const id = button.getAttribute('data-id');
-                const collection = button.getAttribute('data-collection');
-                await showFilesModal(id, collection);
-            });
+            button.removeEventListener('click', handleFolderClick);
+            button.addEventListener('click', handleFolderClick);
         });
+
+        function handleUploadClick(e) {
+            const id = e.currentTarget.getAttribute('data-id');
+            const collection = e.currentTarget.getAttribute('data-collection');
+            const uploadModal = document.getElementById('upload-modal');
+            const uploadPatientId = document.getElementById('upload-patient-id');
+            const uploadCollection = document.getElementById('upload-collection');
+            if (uploadModal && uploadPatientId && uploadCollection) {
+                uploadPatientId.value = id;
+                uploadCollection.value = collection;
+                uploadModal.style.display = 'flex';
+            }
+        }
+
+        async function handleFolderClick(e) {
+            const id = e.currentTarget.getAttribute('data-id');
+            const collection = e.currentTarget.getAttribute('data-collection');
+            await showFilesModal(id, collection);
+        }
     }
 
     async function showLoadingModal(show) {
@@ -787,8 +811,8 @@ export async function initFolderDrive(user) {
                 }
                 selectedMonth = filterMonthSelect?.value || 'all';
             }
+            console.log(`Cargando tabla con Año: ${selectedYear}, Mes: ${selectedMonth}, Estado: ${selectedEstado}`);
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
-            console.log(`Registros filtrados: ${filteredRecords.length}`);
             renderRecords(filteredRecords);
             renderEstadoButtons(filteredRecords);
             updatePagination(filteredRecords);
@@ -804,15 +828,18 @@ export async function initFolderDrive(user) {
     function setupFilterListeners() {
         const filterYearSelect = document.getElementById('filter-year');
         const filterMonthSelect = document.getElementById('filter-month');
-        if (!filterYearSelect || !filterMonthSelect) return;
+        if (!filterYearSelect || !filterMonthSelect) {
+            console.warn('No se encontraron los elementos filter-year o filter-month');
+            return;
+        }
         filterYearSelect.addEventListener('change', () => {
             const selectedYear = filterYearSelect.value;
             const months = getYearsAndMonths(allRecords).monthsByYear[selectedYear] || [];
             populateMonthFilter(months, 'all');
             selectedEstado = '';
             const selectedMonth = filterMonthSelect.value || 'all';
+            console.log(`Cambio de año - Año: ${selectedYear}, Mes: ${selectedMonth}, Estado: ${selectedEstado}`);
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
-            console.log(`Registros filtrados tras cambio de año: ${filteredRecords.length}`);
             currentPage = 1;
             renderRecords(filteredRecords);
             renderEstadoButtons(filteredRecords);
@@ -822,8 +849,8 @@ export async function initFolderDrive(user) {
             const selectedYear = filterYearSelect.value;
             const selectedMonth = filterMonthSelect.value;
             selectedEstado = '';
+            console.log(`Cambio de mes - Año: ${selectedYear}, Mes: ${selectedMonth}, Estado: ${selectedEstado}`);
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
-            console.log(`Registros filtrados tras cambio de mes: ${filteredRecords.length}`);
             currentPage = 1;
             renderRecords(filteredRecords);
             renderEstadoButtons(filteredRecords);
