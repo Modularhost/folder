@@ -55,4 +55,30 @@
             <p>Cargando...</p>
         </div>
     </div>
+    <div id="upload-modal" class="modal">
+        <div class="modal-content">
+            <h3>Subir Archivo</h3>
+            <form id="upload-form">
+                <div class="form-group">
+                    <label for="file-input">Seleccionar archivo (PDF o imagen)</label>
+                    <input type="file" id="file-input" accept=".pdf,image/*" required>
+                    <input type="hidden" id="upload-patient-id" name="patient-id">
+                    <input type="hidden" id="upload-collection" name="collection">
+                </div>
+                <div class="modal-buttons">
+                    <button type="submit" class="action-button">Subir</button>
+                    <button type="button" class="action-button cancel-button" id="cancel-upload">Cancelar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <div id="files-modal" class="modal">
+        <div class="modal-content">
+            <h3>Archivos del Paciente</h3>
+            <div id="files-list"></div>
+            <div class="modal-buttons">
+                <button class="action-button" id="close-files-modal">Cerrar</button>
+            </div>
+        </div>
+    </div>
 </div>

@@ -1,7 +1,9 @@
 import { getFirestore, collection, getDocs, query, where, Timestamp } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js';
+import { getStorage, ref, uploadBytes, listAll, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-storage.js';
 
 export async function initFolderDrive(user) {
     const db = getFirestore();
+    const storage = getStorage();
 
     async function waitForDOM() {
         return new Promise((resolve) => {
@@ -25,6 +27,15 @@ export async function initFolderDrive(user) {
         const prevPageBtn = document.getElementById('prev-page-btn');
         const nextPageBtn = document.getElementById('next-page-btn');
         const pageInfo = document.getElementById('page-info');
+        const uploadModal = document.getElementById('upload-modal');
+        const uploadForm = document.getElementById('upload-form');
+        const fileInput = document.getElementById('file-input');
+        const uploadPatientId = document.getElementById('upload-patient-id');
+        const uploadCollection = document.getElementById('upload-collection');
+        const cancelUploadBtn = document.getElementById('cancel-upload');
+        const filesModal = document.getElementById('files-modal');
+        const filesList = document.getElementById('files-list');
+        const closeFilesModalBtn = document.getElementById('close-files-modal');
 
         const elements = {
             table,
@@ -36,7 +47,16 @@ export async function initFolderDrive(user) {
             messageContainer,
             prevPageBtn,
             nextPageBtn,
-            pageInfo
+            pageInfo,
+            uploadModal,
+            uploadForm,
+            fileInput,
+            uploadPatientId,
+            uploadCollection,
+            cancelUploadBtn,
+            filesModal,
+            filesList,
+            closeFilesModalBtn
         };
 
         Object.entries(elements).forEach(([key, el]) => {
@@ -120,7 +140,7 @@ export async function initFolderDrive(user) {
         }));
 
         return [...implantes, ...consignaciones].map(record => ({
-            id: record.id,
+            id: doc.id,
             fuente: record.fuente,
             admision: record.admision || '',
             nombrePaciente: record.nombrePaciente || '',
@@ -280,7 +300,14 @@ export async function initFolderDrive(user) {
                 <td>${record.admision}</td>
                 <td>${record.nombrePaciente}</td>
                 <td>${formatDate(record.fechaCX, false)}</td>
-                <td><button class="action-button" data-id="${record.id}" data-collection="${record.collection}">Ver</button></td>
+                <td>
+                    <button class="action-button upload-button" data-id="${record.id}" data-collection="${record.collection}" title="Subir archivo">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                    </button>
+                    <button class="action-button folder-button" data-id="${record.id}" data-collection="${record.collection}" title="Ver carpeta">
+                        <i class="fas fa-folder-open"></i>
+                    </button>
+                </td>
             `;
             tableBody.appendChild(row);
         });
@@ -290,7 +317,7 @@ export async function initFolderDrive(user) {
     }
 
     function initializeColumnWidths() {
-        const initialWidths = ['80px', '120px', '80px', '100px'];
+        const initialWidths = ['80px', '120px', '80px', '120px'];
         const headers = document.querySelectorAll('#patients-table th');
         const table = document.getElementById('patients-table');
         headers.forEach((header, index) => {
@@ -488,13 +515,30 @@ export async function initFolderDrive(user) {
         });
     }
 
-    function setupActionButtons() {
-        const buttons = document.querySelectorAll('.action-button');
-        buttons.forEach(button => {
+    async function setupActionButtons() {
+        const uploadButtons = document.querySelectorAll('.upload-button');
+        const folderButtons = document.querySelectorAll('.folder-button');
+
+        uploadButtons.forEach(button => {
             button.addEventListener('click', () => {
                 const id = button.getAttribute('data-id');
                 const collection = button.getAttribute('data-collection');
-                showMessage(`Ver detalles del paciente con Admisión: ${id} en colección: ${collection}`, 'success');
+                const uploadModal = document.getElementById('upload-modal');
+                const uploadPatientId = document.getElementById('upload-patient-id');
+                const uploadCollection = document.getElementById('upload-collection');
+                if (uploadModal && uploadPatientId && uploadCollection) {
+                    uploadPatientId.value = id;
+                    uploadCollection.value = collection;
+                    uploadModal.style.display = 'flex';
+                }
+            });
+        });
+
+        folderButtons.forEach(button => {
+            button.addEventListener('click', async () => {
+                const id = button.getAttribute('data-id');
+                const collection = button.getAttribute('data-collection');
+                await showFilesModal(id, collection);
             });
         });
     }
@@ -568,6 +612,85 @@ export async function initFolderDrive(user) {
                     renderRecords(filteredRecords);
                     updatePagination(filteredRecords);
                 }
+            });
+        }
+    }
+
+    async function setupUploadForm() {
+        const uploadForm = document.getElementById('upload-form');
+        const cancelUploadBtn = document.getElementById('cancel-upload');
+        if (!uploadForm || !cancelUploadBtn) return;
+
+        uploadForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('file-input');
+            const patientId = document.getElementById('upload-patient-id').value;
+            const collection = document.getElementById('upload-collection').value;
+            const file = fileInput.files[0];
+            if (!file) {
+                showMessage('Por favor, seleccione un archivo.', 'error');
+                return;
+            }
+            await showLoadingModal(true);
+            try {
+                const storagePath = `presupuestos/${user.uid}/${collection}/${patientId}/${file.name}`;
+                const fileRef = ref(storage, storagePath);
+                await uploadBytes(fileRef, file);
+                showMessage('Archivo subido exitosamente.', 'success');
+                document.getElementById('upload-modal').style.display = 'none';
+                uploadForm.reset();
+            } catch (error) {
+                console.error('Error al subir archivo:', error);
+                showMessage(`Error al subir archivo: ${error.message}`, 'error');
+            } finally {
+                await showLoadingModal(false);
+            }
+        });
+
+        cancelUploadBtn.addEventListener('click', () => {
+            document.getElementById('upload-modal').style.display = 'none';
+            uploadForm.reset();
+        });
+    }
+
+    async function showFilesModal(patientId, collection) {
+        const filesModal = document.getElementById('files-modal');
+        const filesList = document.getElementById('files-list');
+        if (!filesModal || !filesList) return;
+
+        filesList.innerHTML = '';
+        await showLoadingModal(true);
+        try {
+            const storagePath = `presupuestos/${user.uid}/${collection}/${patientId}/`;
+            const folderRef = ref(storage, storagePath);
+            const fileList = await listAll(folderRef);
+            if (fileList.items.length === 0) {
+                filesList.innerHTML = '<p>No hay archivos subidos para este paciente.</p>';
+            } else {
+                for (const itemRef of fileList.items) {
+                    const url = await getDownloadURL(itemRef);
+                    const fileName = itemRef.name;
+                    const fileItem = document.createElement('a');
+                    fileItem.href = url;
+                    fileItem.textContent = fileName;
+                    fileItem.target = '_blank';
+                    filesList.appendChild(fileItem);
+                }
+            }
+            filesModal.style.display = 'flex';
+        } catch (error) {
+            console.error('Error al listar archivos:', error);
+            showMessage(`Error al listar archivos: ${error.message}`, 'error');
+        } finally {
+            await showLoadingModal(false);
+        }
+    }
+
+    function setupFilesModal() {
+        const closeFilesModalBtn = document.getElementById('close-files-modal');
+        if (closeFilesModalBtn) {
+            closeFilesModalBtn.addEventListener('click', () => {
+                document.getElementById('files-modal').style.display = 'none';
             });
         }
     }
@@ -651,6 +774,8 @@ export async function initFolderDrive(user) {
             await waitForDOM();
             await Promise.all([
                 setupFilterListeners(),
+                setupUploadForm(),
+                setupFilesModal(),
                 loadAndRenderRecords()
             ]);
             initializeColumnWidths();
@@ -671,13 +796,17 @@ export async function initFolderDrive(user) {
         document.querySelectorAll('.estado-button').forEach(button => {
             button.replaceWith(button.cloneNode(true));
         });
-        document.querySelectorAll('.action-button').forEach(button => {
+        document.querySelectorAll('.upload-button, .folder-button').forEach(button => {
             button.replaceWith(button.cloneNode(true));
         });
-        document.querySelectorAll('#prev-page-btn, #next-page-btn').forEach(button => {
+        document.querySelectorAll('#prev-page-btn, #next-page-btn, #cancel-upload, #close-files-modal').forEach(button => {
             button.replaceWith(button.cloneNode(true));
         });
         document.removeEventListener('click', handleOutsideClick);
+        const uploadForm = document.getElementById('upload-form');
+        if (uploadForm) {
+            uploadForm.replaceWith(uploadForm.cloneNode(true));
+        }
     });
 
     function handleOutsideClick(e) {

@@ -163,7 +163,8 @@ body.dark-mode .form-group label {
     color: var(--dark-text-color);
 }
 
-.form-group select {
+.form-group select,
+.form-group input[type="file"] {
     width: 100%;
     padding: 6px;
     border: 1px solid var(--border-color);
@@ -174,19 +175,22 @@ body.dark-mode .form-group label {
     transition: border-color 0.2s;
 }
 
-body.dark-mode .form-group select {
+body.dark-mode .form-group select,
+body.dark-mode .form-group input[type="file"] {
     border-color: var(--dark-border-color);
     background-color: var(--dark-input-bg);
     color: var(--dark-text-color);
 }
 
-.form-group select:focus {
+.form-group select:focus,
+.form-group input[type="file"]:focus {
     outline: none;
     border-color: var(--primary);
     box-shadow: 0 0 5px rgba(43, 108, 176, 0.3);
 }
 
-body.dark-mode .form-group select:focus {
+body.dark-mode .form-group select:focus,
+body.dark-mode .form-group input[type="file"]:focus {
     border-color: var(--dark-primary);
     box-shadow: 0 0 5px rgba(99, 179, 237, 0.3);
 }
@@ -453,6 +457,9 @@ body.dark-mode .filter-container input:focus {
     background-color: var(--primary);
     color: #ffffff;
     transition: background-color 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
 }
 
 body.dark-mode .action-button {
@@ -465,6 +472,26 @@ body.dark-mode .action-button {
 
 body.dark-mode .action-button:hover {
     background-color: var(--dark-primary-hover);
+}
+
+.cancel-button {
+    background-color: #6b7280;
+}
+
+.cancel-button:hover {
+    background-color: #4b5563;
+}
+
+body.dark-mode .cancel-button {
+    background-color: var(--dark-button-bg);
+}
+
+body.dark-mode .cancel-button:hover {
+    background-color: var(--dark-button-hover-bg);
+}
+
+.action-button i {
+    font-size: 12px;
 }
 
 @keyframes slideIn {
@@ -577,6 +604,59 @@ body.dark-mode #loading-modal .modal-content p {
     color: var(--dark-text-color);
 }
 
+#upload-modal .modal-content,
+#files-modal .modal-content {
+    max-width: 400px;
+    padding: 20px;
+}
+
+#upload-modal .modal-content h3,
+#files-modal .modal-content h3 {
+    margin: 0 0 15px;
+    font-size: 16px;
+    color: var(--text-color);
+}
+
+body.dark-mode #upload-modal .modal-content h3,
+body.dark-mode #files-modal .modal-content h3 {
+    color: var(--dark-text-color);
+}
+
+.modal-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+#files-list {
+    max-height: 300px;
+    overflow-y: auto;
+    text-align: left;
+    margin-bottom: 15px;
+}
+
+#files-list a {
+    display: block;
+    padding: 5px;
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+#files-list a:hover {
+    background-color: var(--hover-bg);
+}
+
+body.dark-mode #files-list a {
+    color: var(--dark-primary);
+}
+
+body.dark-mode #files-list a:hover {
+    background-color: var(--dark-hover-bg);
+}
+
 #message-container {
     position: fixed;
     top: 10px;
@@ -653,7 +733,8 @@ body.dark-mode .spinner {
         margin-bottom: 8px;
     }
 
-    .form-group select {
+    .form-group select,
+    .form-group input[type="file"] {
         font-size: 11px;
         padding: 5px;
     }
@@ -704,6 +785,12 @@ body.dark-mode .spinner {
     .modal-content {
         max-width: 95%;
         padding: 10px;
+    }
+
+    #upload-modal .modal-content,
+    #files-modal .modal-content {
+        max-width: 90%;
+        padding: 15px;
     }
 
     .filter-container {
