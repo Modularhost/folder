@@ -1,6 +1,7 @@
 import { getFirestore, collection, getDocs, query, where, Timestamp } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js';
 import { getApps, initializeApp, getApp } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js';
 import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js';
+import { getStorage, ref, uploadBytes, listAll, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-storage.js';
 
 const firebaseConfig = {
   apiKey: "AIzaSyDuF7p0X6N8IE19Bqt78LQAp805tMl84Ds",
@@ -22,6 +23,7 @@ try {
 
     const db = getFirestore(app);
     const auth = getAuth(app);
+    const storage = getStorage(app);
 
     async function waitForDOM() {
         return new Promise((resolve) => {
@@ -301,12 +303,127 @@ try {
                 <td>${record.admision}</td>
                 <td>${record.nombrePaciente}</td>
                 <td>${formatDate(record.fechaCX, false)}</td>
-                <td></td>
+                <td><i class="fas fa-folder folder-icon" data-id="${record.id}" data-collection="${record.collection}" data-nombre="${record.nombrePaciente}"></i></td>
             `;
             tableBody.appendChild(row);
         });
+        document.querySelectorAll('.folder-icon').forEach(icon => {
+            icon.addEventListener('click', handleFolderClick);
+        });
         setupColumnFilters();
         setupResizeHandles();
+    }
+
+    function handleFolderClick(e) {
+        const icon = e.target;
+        const patientId = icon.dataset.id;
+        const collectionName = icon.dataset.collection;
+        const nombre = icon.dataset.nombre;
+        openFilesModal(patientId, collectionName, nombre);
+    }
+
+    function openFilesModal(patientId, collectionName, nombre) {
+        const modal = document.getElementById('files-modal');
+        if (!modal) return;
+        const h2 = modal.querySelector('h2');
+        h2.textContent = `Archivos de ${nombre}`;
+        const uploadInput = modal.querySelector('#file-upload');
+        const uploadBtn = modal.querySelector('#upload-btn');
+        const filesList = modal.querySelector('#files-list');
+        modal.style.display = 'block';
+        uploadInput.value = '';
+        listFiles(patientId, collectionName, filesList);
+        if (!uploadBtn.dataset.listener) {
+            uploadBtn.addEventListener('click', () => {
+                Array.from(uploadInput.files).forEach(file => {
+                    uploadFile(file, patientId, collectionName, filesList);
+                });
+                uploadInput.value = '';
+            });
+            uploadBtn.dataset.listener = 'true';
+        }
+    }
+
+    function listFiles(patientId, collectionName, filesList) {
+        filesList.innerHTML = '';
+        const user = auth.currentUser;
+        const folderPath = `patients/${user.uid}/${collectionName}/${patientId}/files`;
+        const folderRef = ref(storage, folderPath);
+        listAll(folderRef)
+            .then((res) => {
+                if (res.items.length === 0) {
+                    filesList.innerHTML = '<li>No hay archivos subidos.</li>';
+                }
+                res.items.forEach((itemRef) => {
+                    const li = document.createElement('li');
+                    li.textContent = itemRef.name;
+                    li.style.cursor = 'pointer';
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.textContent = 'Eliminar';
+                    deleteBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        deleteObject(itemRef)
+                            .then(() => {
+                                listFiles(patientId, collectionName, filesList);
+                                showMessage('Archivo eliminado exitosamente');
+                            })
+                            .catch((error) => {
+                                showMessage('Error al eliminar archivo: ' + error.message, 'error');
+                            });
+                    });
+                    li.appendChild(deleteBtn);
+                    li.addEventListener('click', (e) => {
+                        if (e.target !== deleteBtn) {
+                            getDownloadURL(itemRef)
+                                .then((url) => {
+                                    showFileViewer(url, itemRef.name);
+                                })
+                                .catch((error) => {
+                                    showMessage('Error al obtener URL: ' + error.message, 'error');
+                                });
+                        }
+                    });
+                    filesList.appendChild(li);
+                });
+            })
+            .catch((error) => {
+                showMessage('Error al listar archivos: ' + error.message, 'error');
+            });
+    }
+
+    function uploadFile(file, patientId, collectionName, filesList) {
+        const user = auth.currentUser;
+        const filePath = `patients/${user.uid}/${collectionName}/${patientId}/files/${file.name}`;
+        const fileRef = ref(storage, filePath);
+        uploadBytes(fileRef, file)
+            .then(() => {
+                showMessage('Archivo subido exitosamente');
+                listFiles(patientId, collectionName, filesList);
+            })
+            .catch((error) => {
+                showMessage('Error al subir archivo: ' + error.message, 'error');
+            });
+    }
+
+    function showFileViewer(url, name) {
+        const modal = document.getElementById('viewer-modal');
+        if (!modal) return;
+        const content = modal.querySelector('#viewer-content');
+        content.innerHTML = '';
+        let element;
+        if (name.toLowerCase().endsWith('.pdf')) {
+            element = document.createElement('iframe');
+            element.src = url;
+            element.style.width = '100%';
+            element.style.height = '80vh';
+        } else {
+            element = document.createElement('img');
+            element.src = url;
+            element.style.maxWidth = '100%';
+            element.style.maxHeight = '80vh';
+        }
+        content.appendChild(element);
+        modal.style.display = 'block';
     }
 
     function initializeColumnWidths() {
@@ -652,6 +769,48 @@ try {
         });
     }
 
+    function createModals() {
+        if (!document.getElementById('files-modal')) {
+            const filesModal = document.createElement('div');
+            filesModal.id = 'files-modal';
+            filesModal.className = 'modal';
+            filesModal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <h2>Archivos</h2>
+                    <input type="file" id="file-upload" accept="image/*,application/pdf" multiple>
+                    <button id="upload-btn">Subir</button>
+                    <ul id="files-list"></ul>
+                </div>
+            `;
+            document.body.appendChild(filesModal);
+        }
+        if (!document.getElementById('viewer-modal')) {
+            const viewerModal = document.createElement('div');
+            viewerModal.id = 'viewer-modal';
+            viewerModal.className = 'modal';
+            viewerModal.innerHTML = `
+                <div class="modal-content">
+                    <span class="close">&times;</span>
+                    <div id="viewer-content"></div>
+                </div>
+            `;
+            document.body.appendChild(viewerModal);
+        }
+        // Setup close listeners
+        document.querySelectorAll('.modal .close').forEach(close => {
+            close.addEventListener('click', () => {
+                close.closest('.modal').style.display = 'none';
+            });
+        });
+        // Click outside to close
+        window.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal')) {
+                e.target.style.display = 'none';
+            }
+        });
+    }
+
     async function init() {
         try {
             await new Promise((resolve, reject) => {
@@ -671,6 +830,7 @@ try {
                 });
             });
             await waitForDOM();
+            createModals();
             await Promise.all([
                 setupFilterListeners(),
                 loadAndRenderRecords()
