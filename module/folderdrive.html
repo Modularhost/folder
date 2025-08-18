@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,9 +10,10 @@
     <script type="module" src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js"></script>
 </head>
+
 <body>
     <div class="referencias-container">
-        <h2>Gestión de Pacientes Combinados</h2>
+        <h2>Carpeta personales</h2>
         <hr class="divider">
         <div class="form-container">
             <div class="filter-container-main">
@@ -46,15 +48,11 @@
             <table id="combinados-table">
                 <thead>
                     <tr>
-                        <th>Modalidad<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="1"></i></th>
-                        <th>Previsión<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="2"></i></th>
-                        <th>Admisión<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="3"></i></th>
-                        <th>Nombre Paciente<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="4"></i></th>
-                        <th>Médico<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="5"></i></th>
-                        <th>Fecha CX<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="6"></i></th>
-                        <th>Proveedor<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="7"></i></th>
-                        <th>Estado<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="8"></i></th>
-                        <th>Total Paciente<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="9"></i></th>
+                        <th>Admisión<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="1"></i></th>
+                        <th>Nombre Paciente<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="2"></i></th>
+                        <th>Fecha CX<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="3"></i></th>
+                        <th>Acciones<div class="resize-handle"></div>
+                        </th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -73,5 +71,6 @@
             </div>
         </div>
         <script type="module" src="pacientes.js"></script>
-    </body>
+</body>
+
 </html>

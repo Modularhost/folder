@@ -71,7 +71,7 @@ try {
     let columnFilters = {};
     let currentPage = 1;
     const recordsPerPage = 100;
-    let initialTableWidth = 0; 
+    let initialTableWidth = 0;
 
     function showMessage(messageText, type = 'success') {
         const messageContainer = document.getElementById('message-container');
@@ -87,13 +87,6 @@ try {
             message.classList.add('fade-out');
             setTimeout(() => message.remove(), 300);
         }, 3000);
-    }
-
-    function formatNumberWithThousands(value) {
-        if (!value && value !== 0) return '0';
-        const num = parseInt(value.toString().replace(/\D/g, ''), 10);
-        if (isNaN(num)) return '0';
-        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
     }
 
     function formatDate(date, withTime = false) {
@@ -144,22 +137,16 @@ try {
         const consignaciones = consignacionSnapshot.docs.map(doc => ({
             id: doc.id,
             fuente: 'Consignación',
-            ...doc.data(),
-            atributo: doc.data().modalidad 
+            ...doc.data()
         }));
 
         return [...implantes, ...consignaciones].map(record => ({
             id: record.id,
             fuente: record.fuente,
-            atributo: record.atributo || record.modalidad || 'Sin modalidad',
-            prevision: record.prevision || '',
             admision: record.admision || '',
             nombrePaciente: record.nombrePaciente || '',
-            medico: record.medico || '',
             fechaCX: record.fechaCX || null,
-            proveedor: record.proveedor || '',
             estado: record.estado || '',
-            totalCotizacion: record.totalCotizacion || record.totalPaciente || 0,
             collection: record.fuente === 'Implantes' ? 'pacientesimplantes' : 'pacientesconsignacion'
         }));
     }
@@ -239,31 +226,16 @@ try {
             if (year !== 'all' && recordYear !== parseInt(year)) return false;
             if (month && recordMonth !== parseInt(month)) return false;
             if (estado && record.estado !== estado) return false;
-            const fields = [
-                'atributo',
-                'prevision',
-                'admision',
-                'nombrePaciente',
-                'medico',
-                'fechaCX',
-                'proveedor',
-                'estado',
-                'totalCotizacion'
-            ];
+            const fields = ['admision', 'nombrePaciente', 'fechaCX'];
             return Object.entries(columnFilters).every(([index, filterValue]) => {
                 if (!filterValue) return true;
-                const field = fields[parseInt(index)]; 
+                const field = fields[parseInt(index)];
                 let value;
                 try {
-                    switch (field) {
-                        case 'fechaCX':
-                            value = formatDate(record[field], false);
-                            break;
-                        case 'totalCotizacion':
-                            value = formatNumberWithThousands(record[field]);
-                            break;
-                        default:
-                            value = (record[field] || '').toString().trim();
+                    if (field === 'fechaCX') {
+                        value = formatDate(record[field], false);
+                    } else {
+                        value = (record[field] || '').toString().trim();
                     }
                     return value.toLowerCase().includes(filterValue.toLowerCase());
                 } catch (error) {
@@ -309,7 +281,7 @@ try {
         if (!tableBody) return;
         tableBody.innerHTML = '';
         if (records.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="9" class="text-center">No hay datos para mostrar. Seleccione un mes para ver los registros.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No hay datos para mostrar. Seleccione un mes para ver los registros.</td></tr>';
             return;
         }
         const sortedRecords = records.sort((a, b) => {
@@ -326,15 +298,10 @@ try {
         paginatedRecords.forEach(record => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${record.atributo}</td>
-                <td>${record.prevision}</td>
                 <td>${record.admision}</td>
                 <td>${record.nombrePaciente}</td>
-                <td>${record.medico}</td>
                 <td>${formatDate(record.fechaCX, false)}</td>
-                <td>${record.proveedor}</td>
-                <td>${record.estado}</td>
-                <td>${formatNumberWithThousands(record.totalCotizacion)}</td>
+                <td></td>
             `;
             tableBody.appendChild(row);
         });
@@ -342,19 +309,8 @@ try {
         setupResizeHandles();
     }
 
-
     function initializeColumnWidths() {
-        const initialWidths = [
-            '80px', 
-            '100px', 
-            '80px', 
-            '120px', 
-            '120px', 
-            '80px', 
-            '100px',
-            '100px', 
-            '80px'  
-        ];
+        const initialWidths = ['100px', '150px', '100px', '100px'];
         const headers = document.querySelectorAll('#combinados-table th');
         const table = document.getElementById('combinados-table');
         headers.forEach((header, index) => {
@@ -388,13 +344,13 @@ try {
             });
         }
         filterIcons.forEach(icon => {
-            icon.removeEventListener('click', handleFilterIconClick); 
+            icon.removeEventListener('click', handleFilterIconClick);
             icon.addEventListener('click', handleFilterIconClick);
         });
 
         function handleFilterIconClick(e) {
             e.stopPropagation();
-            const columnIndex = parseInt(e.target.getAttribute('data-column')) - 1; 
+            const columnIndex = parseInt(e.target.getAttribute('data-column')) - 1;
             const th = e.target.parentElement;
             const existingContainer = document.querySelector('.filter-container');
 
@@ -408,7 +364,7 @@ try {
             const clearButton = document.createElement('button');
             clearButton.className = 'clear-filter-button';
             clearButton.textContent = 'Borrar Filtro';
-            clearButton.disabled = !columnFilters[columnIndex]; 
+            clearButton.disabled = !columnFilters[columnIndex];
             clearButton.addEventListener('click', () => {
                 columnFilters[columnIndex] = '';
                 const filterYearSelect = document.getElementById('filter-year');
@@ -460,7 +416,7 @@ try {
                         header.classList.toggle('filter-active', !!columnFilters[idx]);
                         header.title = columnFilters[idx] ? `Filtro: ${columnFilters[idx]}` : '';
                     });
-                    clearButton.disabled = !columnFilters[columnIndex]; 
+                    clearButton.disabled = !columnFilters[columnIndex];
                 }, 300);
             });
             input.addEventListener('keydown', (e) => {
@@ -485,7 +441,7 @@ try {
             input.focus();
         }
 
-        document.removeEventListener('click', handleOutsideClick); 
+        document.removeEventListener('click', handleOutsideClick);
         document.addEventListener('click', handleOutsideClick);
 
         function handleOutsideClick(e) {
@@ -731,5 +687,4 @@ try {
 } catch (error) {
     console.error('Error crítico al cargar la aplicación:', error);
     showMessage('Error crítico al cargar la aplicación. Contacta al soporte técnico.', 'error');
-
 }
