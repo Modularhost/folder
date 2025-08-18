@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Subir Archivos a Firebase</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+  <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
+    <h1 class="text-2xl font-bold mb-6 text-center">Subir PDF o Imagen a Firebase</h1>
+    <input type="file" id="fileInput" accept="image/*,application/pdf" class="mb-4 w-full p-2 border rounded">
+    <button id="uploadButton" class="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">Subir Archivo</button>
+    <p id="status" class="mt-4 text-center"></p>
+    <a id="fileUrl" href="#" target="_blank" class="mt-2 text-blue-500 hidden">Ver archivo subido</a>
+  </div>
+
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-storage.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
