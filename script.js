@@ -1,25 +1,15 @@
-const firebaseConfig = {
-  apiKey: "AIzaSyDuF7p0X6N8IE19Bqt78LQAp805tMl84Ds",
-  authDomain: "modular-app-16bd6.firebaseapp.com",
-  projectId: "modular-app-16bd6",
-  storageBucket: "modular-app-16bd6.firebasestorage.app",
-  messagingSenderId: "1006327040835",
-  appId: "1:1006327040835:web:b8b4f510da46514a3d3df6",
-  measurementId: "G-GVKBWL9GT9"
-};
+import { signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js';
 
-// Initialize Firebase
-firebase.initializeApp(firebaseConfig);
+const { auth, storage } = window.firebaseApp;
 
-const storage = firebase.storage();
-const auth = firebase.auth();
 const fileInput = document.getElementById('fileInput');
 const uploadButton = document.getElementById('uploadButton');
 const status = document.getElementById('status');
 const fileUrlLink = document.getElementById('fileUrl');
 
 // Sign in anonymously
-auth.signInAnonymously().catch(error => {
+signInAnonymously(auth).catch(error => {
   console.error('Error en autenticación anónima:', error);
   status.textContent = 'Error al iniciar sesión: ' + error.message;
   status.classList.add('error');
@@ -47,14 +37,14 @@ uploadButton.addEventListener('click', () => {
   status.textContent = 'Subiendo...';
 
   // Create storage reference
-  const storageRef = storage.ref('uploads/' + Date.now() + '_' + file.name);
+  const storageRef = ref(storage, 'uploads/' + Date.now() + '_' + file.name);
 
   // Upload file
-  const uploadTask = storageRef.put(file);
+  const uploadTask = uploadBytesResumable(storageRef, file);
 
   uploadTask.on('state_changed',
     snapshot => {
-      // Progress (optional)
+      // Progress
       const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
       status.textContent = `Subiendo: ${Math.round(progress)}%`;
     },
@@ -67,7 +57,7 @@ uploadButton.addEventListener('click', () => {
     },
     () => {
       // Success
-      uploadTask.snapshot.ref.getDownloadURL().then(url => {
+      getDownloadURL(uploadTask.snapshot.ref).then(url => {
         status.textContent = '¡Archivo subido con éxito!';
         status.classList.remove('error');
         status.classList.add('success');
