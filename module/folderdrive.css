@@ -343,7 +343,7 @@ body.dark-mode #combinados-table {
     text-overflow: ellipsis;
     height: 17px;
     line-height: 13px;
-    min-width: 50px; 
+    min-width: 50px;
 }
 
 body.dark-mode #combinados-table th,
@@ -425,6 +425,24 @@ body.dark-mode .filter-icon {
 }
 
 body.dark-mode .filter-icon:hover {
+    color: var(--dark-primary);
+}
+
+.folder-icon {
+    cursor: pointer;
+    color: var(--text-color);
+    transition: color 0.2s;
+}
+
+body.dark-mode .folder-icon {
+    color: var(--dark-text-color);
+}
+
+.folder-icon:hover {
+    color: var(--primary);
+}
+
+body.dark-mode .folder-icon:hover {
     color: var(--dark-primary);
 }
 
@@ -621,11 +639,180 @@ body.dark-mode .pagination #page-info {
     text-align: center;
     padding: 15px;
     border: 1px solid var(--border-color);
+    border-radius: 8px;
 }
 
 body.dark-mode .modal-content {
     background-color: var(--dark-modal-bg);
     color: var(--dark-text-color);
+    border-color: var(--dark-border-color);
+}
+
+.modal .close {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--text-color);
+    transition: color 0.2s;
+}
+
+body.dark-mode .modal .close {
+    color: var(--dark-text-color);
+}
+
+.modal .close:hover {
+    color: var(--primary);
+}
+
+body.dark-mode .modal .close:hover {
+    color: var(--dark-primary);
+}
+
+#files-modal .modal-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#files-modal h2 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text-color);
+    margin: 0 0 10px;
+}
+
+body.dark-mode #files-modal h2 {
+    color: var(--dark-text-color);
+}
+
+#files-modal input[type="file"] {
+    width: 100%;
+    padding: 6px;
+    border: 1px solid var(--border-color);
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    font-size: 12px;
+    margin-bottom: 10px;
+}
+
+body.dark-mode #files-modal input[type="file"] {
+    border-color: var(--dark-border-color);
+    background-color: var(--dark-input-bg);
+    color: var(--dark-text-color);
+}
+
+#files-modal #upload-btn {
+    padding: 8px 16px;
+    font-size: 12px;
+    border: none;
+    cursor: pointer;
+    background-color: var(--button-bg);
+    color: white;
+    transition: background-color 0.2s;
+    border-radius: 4px;
+}
+
+#files-modal #upload-btn:hover {
+    background-color: var(--button-hover-bg);
+}
+
+body.dark-mode #files-modal #upload-btn {
+    background-color: var(--dark-button-bg);
+}
+
+body.dark-mode #files-modal #upload-btn:hover {
+    background-color: var(--dark-button-hover-bg);
+}
+
+#files-modal #files-list {
+    list-style: none;
+    padding: 0;
+    max-height: 300px;
+    overflow-y: auto;
+    margin: 0;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+body.dark-mode #files-modal #files-list {
+    border-color: var(--dark-border-color);
+}
+
+#files-modal #files-list li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    font-size: 12px;
+    color: var(--text-color);
+    border-bottom: 1px solid var(--border-color);
+    cursor: pointer;
+}
+
+body.dark-mode #files-modal #files-list li {
+    color: var(--dark-text-color);
+    border-bottom: 1px solid var(--dark-border-color);
+}
+
+#files-modal #files-list li:last-child {
+    border-bottom: none;
+}
+
+#files-modal #files-list li:hover {
+    background-color: var(--hover-bg);
+}
+
+body.dark-mode #files-modal #files-list li:hover {
+    background-color: var(--dark-hover-bg);
+}
+
+#files-modal #files-list li button {
+    padding: 4px 8px;
+    font-size: 11px;
+    border: none;
+    cursor: pointer;
+    background-color: var(--error-border);
+    color: white;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+#files-modal #files-list li button:hover {
+    background-color: #e69544;
+}
+
+body.dark-mode #files-modal #files-list li button {
+    background-color: var(--dark-error-bg);
+}
+
+body.dark-mode #files-modal #files-list li button:hover {
+    background-color: #ef4444;
+}
+
+#viewer-modal .modal-content {
+    max-width: 800px;
+    padding: 20px;
+}
+
+#viewer-modal #viewer-content {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-height: 80vh;
+    overflow: auto;
+}
+
+#viewer-modal #viewer-content iframe,
+#viewer-modal #viewer-content img {
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}
+
+body.dark-mode #viewer-modal #viewer-content iframe,
+body.dark-mode #viewer-modal #viewer-content img {
     border-color: var(--dark-border-color);
 }
 
@@ -776,6 +963,40 @@ body.dark-mode .spinner {
     .modal-content {
         max-width: 95%;
         padding: 10px;
+    }
+
+    #files-modal .modal-content {
+        padding: 10px;
+    }
+
+    #files-modal input[type="file"] {
+        font-size: 11px;
+        padding: 5px;
+    }
+
+    #files-modal #upload-btn {
+        font-size: 11px;
+        padding: 6px 12px;
+    }
+
+    #files-modal #files-list li {
+        font-size: 11px;
+        padding: 6px 10px;
+    }
+
+    #files-modal #files-list li button {
+        font-size: 10px;
+        padding: 3px 6px;
+    }
+
+    #viewer-modal .modal-content {
+        max-width: 95%;
+        padding: 10px;
+    }
+
+    #viewer-modal #viewer-content iframe,
+    #viewer-modal #viewer-content img {
+        max-height: 70vh;
     }
 
     .filter-container {
