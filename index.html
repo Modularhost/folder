@@ -6,6 +6,8 @@
   <title>Subir Archivos a Firebase</title>
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <!-- Favicon para evitar el error 404 -->
+  <link rel="icon" href="data:,">
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
   <div class="bg-white p-8 rounded-lg shadow-lg w-full max-w-md">
@@ -16,10 +18,30 @@
     <a id="fileUrl" href="#" target="_blank" class="mt-2 text-blue-500 hidden">Ver archivo subido</a>
   </div>
 
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-storage.js"></script>
-  <script src="script.js"></script>
+  <!-- Firebase SDK (usando módulos) -->
+  <script type="module">
+    import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
+    import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+    import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js';
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDuF7p0X6N8IE19Bqt78LQAp805tMl84Ds",
+      authDomain: "modular-app-16bd6.firebaseapp.com",
+      projectId: "modular-app-16bd6",
+      storageBucket: "modular-app-16bd6.firebasestorage.app",
+      messagingSenderId: "1006327040835",
+      appId: "1:1006327040835:web:b8b4f510da46514a3d3df6",
+      measurementId: "G-GVKBWL9GT9"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const storage = getStorage(app);
+
+    // Exportar variables para usar en script.js
+    window.firebaseApp = { auth, storage };
+  </script>
+  <script type="module" src="script.js"></script>
 </body>
 </html>
