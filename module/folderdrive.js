@@ -278,7 +278,23 @@ try {
         });
     }
 
-    function renderRecords(records) {
+    async function getFileCount(patientId, collectionName) {
+        const user = auth.currentUser;
+        if (!user) {
+            return 0;
+        }
+        const folderPath = `patients/${user.uid}/${collectionName}/${patientId}/files`;
+        const folderRef = ref(storage, folderPath);
+        try {
+            const res = await listAll(folderRef);
+            return res.items.length;
+        } catch (error) {
+            console.warn(`Error al contar archivos para ${patientId}: ${error.message}`);
+            return 0;
+        }
+    }
+
+    async function renderRecords(records) {
         const tableBody = document.querySelector('#combinados-table tbody');
         if (!tableBody) return;
         tableBody.innerHTML = '';
@@ -297,16 +313,20 @@ try {
         const startIndex = (currentPage - 1) * recordsPerPage;
         const endIndex = startIndex + recordsPerPage;
         const paginatedRecords = sortedRecords.slice(startIndex, endIndex);
-        paginatedRecords.forEach(record => {
+        for (const record of paginatedRecords) {
+            const fileCount = await getFileCount(record.id, record.collection);
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${record.admision}</td>
                 <td>${record.nombrePaciente}</td>
                 <td>${formatDate(record.fechaCX, false)}</td>
-                <td><i class="fas fa-folder folder-icon" data-id="${record.id}" data-collection="${record.collection}" data-nombre="${record.nombrePaciente}"></i></td>
+                <td>
+                    <i class="fas fa-folder folder-icon" data-id="${record.id}" data-collection="${record.collection}" data-nombre="${record.nombrePaciente}"></i>
+                    <span class="file-count">${fileCount} archivo${fileCount !== 1 ? 's' : ''}</span>
+                </td>
             `;
             tableBody.appendChild(row);
-        });
+        }
         document.querySelectorAll('.folder-icon').forEach(icon => {
             icon.addEventListener('click', handleFolderClick);
         });
@@ -428,19 +448,19 @@ try {
             element = document.createElement('iframe');
             element.src = url;
             element.style.width = '100%';
-            element.style.height = '80vh';
+            element.style.height = '90vh'; // Aumentado para visualizar mejor
         } else {
             element = document.createElement('img');
             element.src = url;
             element.style.maxWidth = '100%';
-            element.style.maxHeight = '80vh';
+            element.style.maxHeight = '90vh';
         }
         content.appendChild(element);
         modal.style.display = 'block';
     }
 
     function initializeColumnWidths() {
-        const initialWidths = ['100px', '150px', '100px', '100px'];
+        const initialWidths = ['100px', '150px', '100px', '150px']; // Ajustado para dar espacio al conteo
         const headers = document.querySelectorAll('#combinados-table th');
         const table = document.getElementById('combinados-table');
         headers.forEach((header, index) => {
