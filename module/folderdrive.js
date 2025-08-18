@@ -116,38 +116,48 @@ export async function initFolderDrive(user) {
 
     async function loadRecords() {
         if (!user) throw new Error('Usuario no autenticado');
+        console.log(`Cargando registros para el usuario con UID: ${user.uid}`);
 
-        const implantesQuery = query(
-            collection(db, 'pacientesimplantes'),
-            where('uid', '==', user.uid)
-        );
-        const implantesSnapshot = await getDocs(implantesQuery);
-        const implantes = implantesSnapshot.docs.map(doc => ({
-            id: doc.id,
-            fuente: 'Implantes',
-            ...doc.data()
-        }));
+        try {
+            const implantesQuery = query(
+                collection(db, 'pacientesimplantes'),
+                where('uid', '==', user.uid)
+            );
+            const implantesSnapshot = await getDocs(implantesQuery);
+            const implantes = implantesSnapshot.docs.map(doc => ({
+                id: doc.id,
+                fuente: 'Implantes',
+                ...doc.data()
+            }));
 
-        const consignacionQuery = query(
-            collection(db, 'pacientesconsignacion'),
-            where('uid', '==', user.uid)
-        );
-        const consignacionSnapshot = await getDocs(consignacionQuery);
-        const consignaciones = consignacionSnapshot.docs.map(doc => ({
-            id: doc.id,
-            fuente: 'Consignación',
-            ...doc.data()
-        }));
+            const consignacionQuery = query(
+                collection(db, 'pacientesconsignacion'),
+                where('uid', '==', user.uid)
+            );
+            const consignacionSnapshot = await getDocs(consignacionQuery);
+            const consignaciones = consignacionSnapshot.docs.map(doc => ({
+                id: doc.id,
+                fuente: 'Consignación',
+                ...doc.data()
+            }));
 
-        return [...implantes, ...consignaciones].map(record => ({
-            id: doc.id,
-            fuente: record.fuente,
-            admision: record.admision || '',
-            nombrePaciente: record.nombrePaciente || '',
-            fechaCX: record.fechaCX || null,
-            estado: record.estado || '',
-            collection: record.fuente === 'Implantes' ? 'pacientesimplantes' : 'pacientesconsignacion'
-        }));
+            const records = [...implantes, ...consignaciones].map(record => ({
+                id: record.id,
+                fuente: record.fuente,
+                admision: record.admision || '',
+                nombrePaciente: record.nombrePaciente || '',
+                fechaCX: record.fechaCX || null,
+                estado: record.estado || '',
+                collection: record.fuente === 'Implantes' ? 'pacientesimplantes' : 'pacientesconsignacion'
+            }));
+
+            console.log(`Registros cargados: ${records.length} (Implantes: ${implantes.length}, Consignación: ${consignaciones.length})`);
+            console.log('Primeros 5 registros:', records.slice(0, 5));
+            return records;
+        } catch (error) {
+            console.error('Error al cargar registros:', error);
+            throw error;
+        }
     }
 
     function getYearsAndMonths(records) {
@@ -205,28 +215,44 @@ export async function initFolderDrive(user) {
         ];
         const validMonths = Array.isArray(months) ? months : [];
         filterMonthSelect.innerHTML = `
-            <option value="" disabled selected>Seleccione un mes</option>
+            <option value="" disabled>Seleccione un mes</option>
+            <option value="all">Todos</option>
             ${monthNames
                 .filter(month => validMonths.includes(parseInt(month.value)))
                 .map(month => `<option value="${month.value}">${month.name}</option>`)
                 .join('')}
         `;
-        filterMonthSelect.value = validMonths.includes(parseInt(selectedMonth)) ? selectedMonth : '';
+        filterMonthSelect.value = validMonths.includes(parseInt(selectedMonth)) ? selectedMonth : 'all';
     }
 
     function filterRecords(records, year, month, estado) {
-        if (month === '') return [];
         return records.filter(record => {
-            if (!(record.fechaCX instanceof Timestamp) || isNaN(record.fechaCX.toDate().getTime())) return false;
-            const date = record.fechaCX.toDate();
-            date.setHours(0, 0, 0, 0);
-            const recordYear = date.getFullYear();
-            const recordMonth = date.getMonth() + 1;
-            if (year !== 'all' && recordYear !== parseInt(year)) return false;
-            if (month && recordMonth !== parseInt(month)) return false;
-            if (estado && record.estado !== estado) return false;
+            let matches = true;
+
+            // Filtrar por año
+            if (year !== 'all' && record.fechaCX instanceof Timestamp && !isNaN(record.fechaCX.toDate().getTime())) {
+                const date = record.fechaCX.toDate();
+                date.setHours(0, 0, 0, 0);
+                const recordYear = date.getFullYear();
+                matches = matches && recordYear === parseInt(year);
+            }
+
+            // Filtrar por mes
+            if (month !== 'all' && month !== '' && record.fechaCX instanceof Timestamp && !isNaN(record.fechaCX.toDate().getTime())) {
+                const date = record.fechaCX.toDate();
+                date.setHours(0, 0, 0, 0);
+                const recordMonth = date.getMonth() + 1;
+                matches = matches && recordMonth === parseInt(month);
+            }
+
+            // Filtrar por estado
+            if (estado && record.estado !== estado) {
+                matches = false;
+            }
+
+            // Filtrar por columnas
             const fields = ['admision', 'nombrePaciente', 'fechaCX'];
-            return Object.entries(columnFilters).every(([index, filterValue]) => {
+            matches = matches && Object.entries(columnFilters).every(([index, filterValue]) => {
                 if (!filterValue) return true;
                 const field = fields[parseInt(index)];
                 let value;
@@ -242,6 +268,8 @@ export async function initFolderDrive(user) {
                     return false;
                 }
             });
+
+            return matches;
         });
     }
 
@@ -265,7 +293,7 @@ export async function initFolderDrive(user) {
                 const filterYearSelect = document.getElementById('filter-year');
                 const filterMonthSelect = document.getElementById('filter-month');
                 const selectedYear = filterYearSelect?.value || 'all';
-                const selectedMonth = filterMonthSelect?.value || '';
+                const selectedMonth = filterMonthSelect?.value || 'all';
                 const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                 renderRecords(filteredRecords);
                 renderEstadoButtons(filteredRecords);
@@ -280,7 +308,7 @@ export async function initFolderDrive(user) {
         if (!tableBody) return;
         tableBody.innerHTML = '';
         if (records.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No hay datos para mostrar. Seleccione un mes para ver los registros.</td></tr>';
+            tableBody.innerHTML = `<tr><td colspan="4" class="text-center">No hay datos para mostrar. ${allRecords.length === 0 ? 'No se encontraron registros en la base de datos.' : 'Ajuste los filtros para ver los registros.'}</td></tr>`;
             return;
         }
         const sortedRecords = records.sort((a, b) => {
@@ -377,7 +405,7 @@ export async function initFolderDrive(user) {
                 const filterYearSelect = document.getElementById('filter-year');
                 const filterMonthSelect = document.getElementById('filter-month');
                 const selectedYear = filterYearSelect?.value || 'all';
-                const selectedMonth = filterMonthSelect?.value || '';
+                const selectedMonth = filterMonthSelect?.value || 'all';
                 const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                 renderRecords(filteredRecords);
                 renderEstadoButtons(filteredRecords);
@@ -414,7 +442,7 @@ export async function initFolderDrive(user) {
                     const filterYearSelect = document.getElementById('filter-year');
                     const filterMonthSelect = document.getElementById('filter-month');
                     const selectedYear = filterYearSelect?.value || 'all';
-                    const selectedMonth = filterMonthSelect?.value || '';
+                    const selectedMonth = filterMonthSelect?.value || 'all';
                     const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                     renderRecords(filteredRecords);
                     renderEstadoButtons(filteredRecords);
@@ -432,7 +460,7 @@ export async function initFolderDrive(user) {
                     const filterYearSelect = document.getElementById('filter-year');
                     const filterMonthSelect = document.getElementById('filter-month');
                     const selectedYear = filterYearSelect?.value || 'all';
-                    const selectedMonth = filterMonthSelect?.value || '';
+                    const selectedMonth = filterMonthSelect?.value || 'all';
                     const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                     renderRecords(filteredRecords);
                     renderEstadoButtons(filteredRecords);
@@ -571,51 +599,6 @@ export async function initFolderDrive(user) {
         }
     }
 
-    function updatePagination(records) {
-        const pageInfo = document.getElementById('page-info');
-        const prevButton = document.getElementById('prev-page-btn');
-        const nextButton = document.getElementById('next-page-btn');
-        if (!pageInfo || !prevButton || !nextButton) return;
-        const totalPages = Math.ceil(records.length / recordsPerPage);
-        pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
-        prevButton.disabled = currentPage === 1;
-        nextButton.disabled = currentPage === totalPages || totalPages === 0;
-    }
-
-    function setupPaginationListeners() {
-        const prevButton = document.getElementById('prev-page-btn');
-        const nextButton = document.getElementById('next-page-btn');
-        if (prevButton) {
-            prevButton.addEventListener('click', () => {
-                if (currentPage > 1) {
-                    currentPage--;
-                    const filterYearSelect = document.getElementById('filter-year');
-                    const filterMonthSelect = document.getElementById('filter-month');
-                    const selectedYear = filterYearSelect?.value || 'all';
-                    const selectedMonth = filterMonthSelect?.value || '';
-                    const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
-                    renderRecords(filteredRecords);
-                    updatePagination(filteredRecords);
-                }
-            });
-        }
-        if (nextButton) {
-            nextButton.addEventListener('click', () => {
-                const totalPages = Math.ceil(allRecords.length / recordsPerPage);
-                if (currentPage < totalPages) {
-                    currentPage++;
-                    const filterYearSelect = document.getElementById('filter-year');
-                    const filterMonthSelect = document.getElementById('filter-month');
-                    const selectedYear = filterYearSelect?.value || 'all';
-                    const selectedMonth = filterMonthSelect?.value || '';
-                    const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
-                    renderRecords(filteredRecords);
-                    updatePagination(filteredRecords);
-                }
-            });
-        }
-    }
-
     async function setupUploadForm() {
         const uploadForm = document.getElementById('upload-form');
         const cancelUploadBtn = document.getElementById('cancel-upload');
@@ -704,26 +687,30 @@ export async function initFolderDrive(user) {
         await showLoadingModal(true);
         try {
             allRecords = await loadRecords();
+            if (allRecords.length === 0) {
+                showMessage('No se encontraron registros en la base de datos.', 'error');
+            }
             const { years, monthsByYear } = getYearsAndMonths(allRecords);
             let selectedYear, selectedMonth;
             if (!preserveFilters) {
                 populateYearFilter(years);
                 selectedYear = filterYearSelect?.value || 'all';
-                populateMonthFilter(monthsByYear[selectedYear] || []);
-                selectedMonth = '';
-                if (filterMonthSelect) filterMonthSelect.value = '';
+                populateMonthFilter(monthsByYear[selectedYear] || [], 'all');
+                selectedMonth = 'all';
+                if (filterMonthSelect) filterMonthSelect.value = 'all';
                 selectedEstado = '';
                 columnFilters = {};
             } else {
                 selectedYear = filterYearSelect?.value || 'all';
-                selectedMonth = filterMonthSelect?.value || '';
+                selectedMonth = filterMonthSelect?.value || 'all';
                 populateMonthFilter(monthsByYear[selectedYear] || [], selectedMonth);
                 if (filterMonthSelect) {
-                    filterMonthSelect.value = (selectedMonth && monthsByYear[selectedYear]?.includes(parseInt(selectedMonth))) ? selectedMonth : '';
+                    filterMonthSelect.value = (selectedMonth && monthsByYear[selectedYear]?.includes(parseInt(selectedMonth))) ? selectedMonth : 'all';
                 }
-                selectedMonth = filterMonthSelect?.value || '';
+                selectedMonth = filterMonthSelect?.value || 'all';
             }
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
+            console.log(`Registros filtrados: ${filteredRecords.length}`);
             renderRecords(filteredRecords);
             renderEstadoButtons(filteredRecords);
             updatePagination(filteredRecords);
@@ -743,10 +730,11 @@ export async function initFolderDrive(user) {
         filterYearSelect.addEventListener('change', () => {
             const selectedYear = filterYearSelect.value;
             const months = getYearsAndMonths(allRecords).monthsByYear[selectedYear] || [];
-            populateMonthFilter(months);
+            populateMonthFilter(months, 'all');
             selectedEstado = '';
-            const selectedMonth = filterMonthSelect.value || '';
+            const selectedMonth = filterMonthSelect.value || 'all';
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
+            console.log(`Registros filtrados tras cambio de año: ${filteredRecords.length}`);
             currentPage = 1;
             renderRecords(filteredRecords);
             renderEstadoButtons(filteredRecords);
@@ -757,6 +745,7 @@ export async function initFolderDrive(user) {
             const selectedMonth = filterMonthSelect.value;
             selectedEstado = '';
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
+            console.log(`Registros filtrados tras cambio de mes: ${filteredRecords.length}`);
             currentPage = 1;
             renderRecords(filteredRecords);
             renderEstadoButtons(filteredRecords);
