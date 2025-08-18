@@ -1,5 +1,6 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js';
-import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getAuth, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js';
+import { getFirestore, collection, query, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js';
 import { getStorage, ref, uploadBytesResumable, getDownloadURL } from 'https://www.gstatic.com/firebasejs/10.12.5/firebase-storage.js';
 
 // Configuración de Firebase
@@ -16,19 +17,76 @@ const firebaseConfig = {
 // Inicializar Firebase
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+const db = getFirestore(app);
 const storage = getStorage(app);
 
 // Elementos del DOM
+const usernameInput = document.getElementById('usernameInput');
+const passwordInput = document.getElementById('passwordInput');
+const loginButton = document.getElementById('loginButton');
+const loginStatus = document.getElementById('loginStatus');
+const uploadModal = document.getElementById('uploadModal');
 const fileInput = document.getElementById('fileInput');
 const uploadButton = document.getElementById('uploadButton');
+const closeModal = document.getElementById('closeModal');
 const status = document.getElementById('status');
 const fileUrlLink = document.getElementById('fileUrl');
 
-// Iniciar sesión anónima
-signInAnonymously(auth).catch(error => {
-  console.error('Error en autenticación anónima:', error);
-  status.textContent = 'Error al iniciar sesión: ' + error.message;
-  status.classList.add('error');
+// Manejar inicio de sesión
+loginButton.addEventListener('click', async () => {
+  const username = usernameInput.value.trim();
+  const password = passwordInput.value;
+
+  if (!username || !password) {
+    loginStatus.textContent = 'Por favor, ingresa el RUT y la contraseña.';
+    loginStatus.classList.add('error');
+    return;
+  }
+
+  loginButton.disabled = true;
+  loginStatus.textContent = 'Iniciando sesión...';
+
+  try {
+    // Buscar el email en la colección usernames usando el username
+    const usernamesRef = collection(db, 'usernames');
+    const q = query(usernamesRef, where('username', '==', username));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+      loginStatus.textContent = 'RUT no encontrado.';
+      loginStatus.classList.add('error');
+      loginButton.disabled = false;
+      return;
+    }
+
+    const userDoc = querySnapshot.docs[0];
+    const email = userDoc.data().email;
+
+    // Iniciar sesión con email y contraseña
+    await signInWithEmailAndPassword(auth, email, password);
+
+    loginStatus.textContent = '¡Inicio de sesión exitoso!';
+    loginStatus.classList.remove('error');
+    loginStatus.classList.add('success');
+
+    // Mostrar el modal de subida
+    loginForm.classList.add('hidden');
+    uploadModal.classList.remove('hidden');
+  } catch (error) {
+    console.error('Error al iniciar sesión:', error);
+    loginStatus.textContent = 'Error al iniciar sesión: ' + error.message;
+    loginStatus.classList.add('error');
+    loginButton.disabled = false;
+  }
+});
+
+// Cerrar el modal
+closeModal.addEventListener('click', () => {
+  uploadModal.classList.add('hidden');
+  loginForm.classList.remove('hidden');
+  loginStatus.textContent = '';
+  usernameInput.value = '';
+  passwordInput.value = '';
 });
 
 // Manejar la subida de archivos
