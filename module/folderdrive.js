@@ -335,6 +335,11 @@ try {
         listFiles(patientId, collectionName, filesList);
         if (!uploadBtn.dataset.listener) {
             uploadBtn.addEventListener('click', () => {
+                const user = auth.currentUser;
+                if (!user) {
+                    showMessage('Usuario no autenticado. Por favor, inicia sesión.', 'error');
+                    return;
+                }
                 Array.from(uploadInput.files).forEach(file => {
                     uploadFile(file, patientId, collectionName, filesList);
                 });
@@ -347,6 +352,10 @@ try {
     function listFiles(patientId, collectionName, filesList) {
         filesList.innerHTML = '';
         const user = auth.currentUser;
+        if (!user) {
+            showMessage('Usuario no autenticado. No se pueden listar archivos.', 'error');
+            return;
+        }
         const folderPath = `patients/${user.uid}/${collectionName}/${patientId}/files`;
         const folderRef = ref(storage, folderPath);
         listAll(folderRef)
@@ -393,6 +402,10 @@ try {
 
     function uploadFile(file, patientId, collectionName, filesList) {
         const user = auth.currentUser;
+        if (!user) {
+            showMessage('Usuario no autenticado. No se puede subir archivo.', 'error');
+            return;
+        }
         const filePath = `patients/${user.uid}/${collectionName}/${patientId}/files/${file.name}`;
         const fileRef = ref(storage, filePath);
         uploadBytes(fileRef, file)
