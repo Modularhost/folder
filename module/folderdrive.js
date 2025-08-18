@@ -89,6 +89,13 @@ export async function initFolderDrive(user) {
         }, 3000);
     }
 
+    function formatNumberWithThousands(value) {
+        if (!value && value !== 0) return '0';
+        const num = parseInt(value.toString().replace(/\D/g, ''), 10);
+        if (isNaN(num)) return '0';
+        return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+
     function formatDate(date, withTime = false) {
         if (!date) return 'Sin fecha';
         let d;
@@ -138,16 +145,22 @@ export async function initFolderDrive(user) {
             const consignaciones = consignacionSnapshot.docs.map(doc => ({
                 id: doc.id,
                 fuente: 'Consignación',
-                ...doc.data()
+                ...doc.data(),
+                atributo: doc.data().modalidad
             }));
 
             const records = [...implantes, ...consignaciones].map(record => ({
                 id: record.id,
                 fuente: record.fuente,
+                atributo: record.atributo || record.modalidad || 'Sin modalidad',
+                prevision: record.prevision || '',
                 admision: record.admision || '',
                 nombrePaciente: record.nombrePaciente || '',
+                medico: record.medico || '',
                 fechaCX: record.fechaCX || null,
+                proveedor: record.proveedor || '',
                 estado: record.estado || '',
+                totalCotizacion: record.totalCotizacion || record.totalPaciente || 0,
                 collection: record.fuente === 'Implantes' ? 'pacientesimplantes' : 'pacientesconsignacion'
             }));
 
@@ -196,7 +209,7 @@ export async function initFolderDrive(user) {
         filterYearSelect.value = years.includes(currentYear) ? currentYear.toString() : 'all';
     }
 
-    function populateMonthFilter(months, selectedMonth = '') {
+    function populateMonthFilter(months, selectedMonth = 'all') {
         const filterMonthSelect = document.getElementById('filter-month');
         if (!filterMonthSelect) return;
         const monthNames = [
@@ -215,7 +228,6 @@ export async function initFolderDrive(user) {
         ];
         const validMonths = Array.isArray(months) ? months : [];
         filterMonthSelect.innerHTML = `
-            <option value="" disabled>Seleccione un mes</option>
             <option value="all">Todos</option>
             ${monthNames
                 .filter(month => validMonths.includes(parseInt(month.value)))
@@ -226,41 +238,55 @@ export async function initFolderDrive(user) {
     }
 
     function filterRecords(records, year, month, estado) {
-        return records.filter(record => {
+        console.log(`Filtrando registros - Año: ${year}, Mes: ${month}, Estado: ${estado}`);
+        const filtered = records.filter(record => {
             let matches = true;
 
-            // Filtrar por año
-            if (year !== 'all' && record.fechaCX instanceof Timestamp && !isNaN(record.fechaCX.toDate().getTime())) {
+            if (!(record.fechaCX instanceof Timestamp) || isNaN(record.fechaCX.toDate().getTime())) {
+                matches = false;
+            } else {
                 const date = record.fechaCX.toDate();
                 date.setHours(0, 0, 0, 0);
                 const recordYear = date.getFullYear();
-                matches = matches && recordYear === parseInt(year);
-            }
-
-            // Filtrar por mes
-            if (month !== 'all' && month !== '' && record.fechaCX instanceof Timestamp && !isNaN(record.fechaCX.toDate().getTime())) {
-                const date = record.fechaCX.toDate();
-                date.setHours(0, 0, 0, 0);
                 const recordMonth = date.getMonth() + 1;
-                matches = matches && recordMonth === parseInt(month);
+
+                if (year !== 'all' && recordYear !== parseInt(year)) {
+                    matches = false;
+                }
+                if (month !== 'all' && month !== '' && recordMonth !== parseInt(month)) {
+                    matches = false;
+                }
             }
 
-            // Filtrar por estado
             if (estado && record.estado !== estado) {
                 matches = false;
             }
 
-            // Filtrar por columnas
-            const fields = ['admision', 'nombrePaciente', 'fechaCX'];
+            const fields = [
+                'atributo',
+                'prevision',
+                'admision',
+                'nombrePaciente',
+                'medico',
+                'fechaCX',
+                'proveedor',
+                'estado',
+                'totalCotizacion'
+            ];
             matches = matches && Object.entries(columnFilters).every(([index, filterValue]) => {
                 if (!filterValue) return true;
                 const field = fields[parseInt(index)];
                 let value;
                 try {
-                    if (field === 'fechaCX') {
-                        value = formatDate(record[field], false);
-                    } else {
-                        value = (record[field] || '').toString().trim();
+                    switch (field) {
+                        case 'fechaCX':
+                            value = formatDate(record[field], false);
+                            break;
+                        case 'totalCotizacion':
+                            value = formatNumberWithThousands(record[field]);
+                            break;
+                        default:
+                            value = (record[field] || '').toString().trim();
                     }
                     return value.toLowerCase().includes(filterValue.toLowerCase());
                 } catch (error) {
@@ -271,6 +297,8 @@ export async function initFolderDrive(user) {
 
             return matches;
         });
+        console.log(`Registros filtrados: ${filtered.length}`);
+        return filtered;
     }
 
     function renderEstadoButtons(records) {
@@ -308,7 +336,7 @@ export async function initFolderDrive(user) {
         if (!tableBody) return;
         tableBody.innerHTML = '';
         if (records.length === 0) {
-            tableBody.innerHTML = `<tr><td colspan="4" class="text-center">No hay datos para mostrar. ${allRecords.length === 0 ? 'No se encontraron registros en la base de datos.' : 'Ajuste los filtros para ver los registros.'}</td></tr>`;
+            tableBody.innerHTML = `<tr><td colspan="10" class="text-center">No hay datos para mostrar. ${allRecords.length === 0 ? 'No se encontraron registros en la base de datos.' : 'Ajuste los filtros para ver los registros.'}</td></tr>`;
             return;
         }
         const sortedRecords = records.sort((a, b) => {
@@ -325,9 +353,15 @@ export async function initFolderDrive(user) {
         paginatedRecords.forEach(record => {
             const row = document.createElement('tr');
             row.innerHTML = `
+                <td>${record.atributo}</td>
+                <td>${record.prevision}</td>
                 <td>${record.admision}</td>
                 <td>${record.nombrePaciente}</td>
+                <td>${record.medico}</td>
                 <td>${formatDate(record.fechaCX, false)}</td>
+                <td>${record.proveedor}</td>
+                <td>${record.estado}</td>
+                <td>${formatNumberWithThousands(record.totalCotizacion)}</td>
                 <td>
                     <button class="action-button upload-button" data-id="${record.id}" data-collection="${record.collection}" title="Subir archivo">
                         <i class="fas fa-cloud-upload-alt"></i>
@@ -341,11 +375,10 @@ export async function initFolderDrive(user) {
         });
         setupColumnFilters();
         setupResizeHandles();
-        setupActionButtons();
     }
 
     function initializeColumnWidths() {
-        const initialWidths = ['80px', '120px', '80px', '120px'];
+        const initialWidths = ['80px', '100px', '80px', '120px', '120px', '80px', '100px', '100px', '80px', '120px'];
         const headers = document.querySelectorAll('#patients-table th');
         const table = document.getElementById('patients-table');
         headers.forEach((header, index) => {
@@ -678,6 +711,51 @@ export async function initFolderDrive(user) {
         }
     }
 
+    function updatePagination(records) {
+        const pageInfo = document.getElementById('page-info');
+        const prevButton = document.getElementById('prev-page-btn');
+        const nextButton = document.getElementById('next-page-btn');
+        if (!pageInfo || !prevButton || !nextButton) return;
+        const totalPages = Math.ceil(records.length / recordsPerPage);
+        pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
+        prevButton.disabled = currentPage === 1;
+        nextButton.disabled = currentPage === totalPages || totalPages === 0;
+    }
+
+    function setupPaginationListeners() {
+        const prevButton = document.getElementById('prev-page-btn');
+        const nextButton = document.getElementById('next-page-btn');
+        if (prevButton) {
+            prevButton.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    const filterYearSelect = document.getElementById('filter-year');
+                    const filterMonthSelect = document.getElementById('filter-month');
+                    const selectedYear = filterYearSelect?.value || 'all';
+                    const selectedMonth = filterMonthSelect?.value || 'all';
+                    const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
+                    renderRecords(filteredRecords);
+                    updatePagination(filteredRecords);
+                }
+            });
+        }
+        if (nextButton) {
+            nextButton.addEventListener('click', () => {
+                const totalPages = Math.ceil(allRecords.length / recordsPerPage);
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    const filterYearSelect = document.getElementById('filter-year');
+                    const filterMonthSelect = document.getElementById('filter-month');
+                    const selectedYear = filterYearSelect?.value || 'all';
+                    const selectedMonth = filterMonthSelect?.value || 'all';
+                    const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
+                    renderRecords(filteredRecords);
+                    updatePagination(filteredRecords);
+                }
+            });
+        }
+    }
+
     async function loadAndRenderRecords(preserveFilters = false) {
         const { tableBody, filterYearSelect, filterMonthSelect } = await getDOMElements();
         if (!tableBody) {
@@ -777,7 +855,6 @@ export async function initFolderDrive(user) {
 
     init();
 
-    // Limpiar eventos al salir del módulo
     window.addEventListener('moduleCleanup', () => {
         document.querySelectorAll('.filter-icon').forEach(icon => {
             icon.replaceWith(icon.cloneNode(true));
