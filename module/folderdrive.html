@@ -1,14 +1,58 @@
 <div class="content-container">
     <h2>Gestión de Pacientes</h2>
-    <table id="patients-table" class="patients-table">
-        <thead>
-            <tr>
-                <th>Admisión</th>
-                <th>Nombre Paciente</th>
-                <th>Fecha Cx</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody id="patients-table-body"></tbody>
-    </table>
+    <hr class="divider">
+    <div class="form-container">
+        <div class="filter-container-main">
+            <div class="form-group">
+                <label for="filter-year">Año</label>
+                <select id="filter-year" autocomplete="off">
+                    <option value="all">Todos</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="filter-month">Mes</label>
+                <select id="filter-month" autocomplete="off">
+                    <option value="" disabled selected>Seleccione un mes</option>
+                    <option value="1">Enero</option>
+                    <option value="2">Febrero</option>
+                    <option value="3">Marzo</option>
+                    <option value="4">Abril</option>
+                    <option value="5">Mayo</option>
+                    <option value="6">Junio</option>
+                    <option value="7">Julio</option>
+                    <option value="8">Agosto</option>
+                    <option value="9">Septiembre</option>
+                    <option value="10">Octubre</option>
+                    <option value="11">Noviembre</option>
+                    <option value="12">Diciembre</option>
+                </select>
+            </div>
+            <div class="estado-buttons" id="estado-buttons"></div>
+        </div>
+    </div>
+    <div class="table-container">
+        <table id="patients-table">
+            <thead>
+                <tr>
+                    <th>Admisión<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="1"></i></th>
+                    <th>Nombre Paciente<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="2"></i></th>
+                    <th>Fecha Cx<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="3"></i></th>
+                    <th>Acciones<div class="resize-handle"></div></th>
+                </tr>
+            </thead>
+            <tbody id="patients-table-body"></tbody>
+        </table>
+    </div>
+    <div class="pagination">
+        <button id="prev-page-btn" disabled>Anterior</button>
+        <span id="page-info">Página 1 de 1</span>
+        <button id="next-page-btn" disabled>Siguiente</button>
+    </div>
+    <div id="message-container"></div>
+    <div id="loading-modal" class="modal">
+        <div class="modal-content">
+            <div class="spinner"></div>
+            <p>Cargando...</p>
+        </div>
+    </div>
 </div>
