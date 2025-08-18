@@ -1,0 +1,17 @@
+/* Custom styles to complement Tailwind */
+body {
+  font-family: 'Arial', sans-serif;
+}
+#fileInput {
+  cursor: pointer;
+}
+#uploadButton:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+#status.error {
+  color: red;
+}
+#status.success {
+  color: green;
+}
