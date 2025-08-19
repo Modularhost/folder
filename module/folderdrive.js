@@ -460,7 +460,7 @@ try {
     }
 
     function initializeColumnWidths() {
-        const initialWidths = ['250px', '350px', '200px', '300px']; // Ajustado a los nuevos anchos
+        const initialWidths = ['250px', '350px', '200px', '300px'];
         const headers = document.querySelectorAll('#combinados-table th');
         const table = document.getElementById('combinados-table');
         headers.forEach((header, index) => {
@@ -476,7 +476,7 @@ try {
             initialTableWidth = initialWidths.reduce((sum, w) => sum + parseInt(w), 0);
             table.style.minWidth = `${initialTableWidth}px`;
         }
-    }
+}
 
     function setupColumnFilters() {
         const filterIcons = document.querySelectorAll('.filter-icon');
