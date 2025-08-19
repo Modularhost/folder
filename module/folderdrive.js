@@ -350,7 +350,7 @@ try {
         const uploadInput = modal.querySelector('#file-upload');
         const uploadBtn = modal.querySelector('#upload-btn');
         const filesList = modal.querySelector('#files-list');
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
         uploadInput.value = '';
         listFiles(patientId, collectionName, filesList);
         if (!uploadBtn.dataset.listener) {
@@ -456,7 +456,7 @@ try {
             element.style.maxHeight = '90vh';
         }
         content.appendChild(element);
-        modal.style.display = 'block';
+        modal.style.display = 'flex';
     }
 
     function initializeColumnWidths() {
@@ -587,7 +587,7 @@ try {
             });
 
             tableContainer.appendChild(container);
-            container.style.display = 'block';
+            container.style.display = 'flex';
             input.focus();
         }
 
