@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestión de Pacientes Combinados</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="styles.css"> <!-- Incluye tu CSS si existe -->
     <script type="module" src="https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js"></script>
     <script type="module" src="https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.12.1/firebase-storage.js"></script>
 </head>
-
 <body>
     <div class="referencias-container">
         <h2>Carpeta personales</h2>
@@ -26,7 +26,7 @@
                 <div class="form-group">
                     <label for="filter-month">Mes</label>
                     <select id="filter-month" autocomplete="off">
-                        <option value="" disabled selected>Seleccione un mes</option>
+                        <option value="all">Todos</option>
                         <option value="1">Enero</option>
                         <option value="2">Febrero</option>
                         <option value="3">Marzo</option>
@@ -48,11 +48,10 @@
             <table id="combinados-table">
                 <thead>
                     <tr>
-                        <th>Admisión<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="1"></i></th>
-                        <th>Nombre Paciente<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="2"></i></th>
-                        <th>Fecha CX<div class="resize-handle"></div><i class="fas fa-bars filter-icon" data-column="3"></i></th>
-                        <th>Acciones<div class="resize-handle"></div>
-                        </th>
+                        <th>Admisión<div class="resize-handle"></div><i class="fas fa-filter filter-icon" data-column="1"></i></th>
+                        <th>Nombre Paciente<div class="resize-handle"></div><i class="fas fa-filter filter-icon" data-column="2"></i></th>
+                        <th>Fecha CX<div class="resize-handle"></div><i class="fas fa-filter filter-icon" data-column="3"></i></th>
+                        <th>Acciones<div class="resize-handle"></div></th>
                     </tr>
                 </thead>
                 <tbody></tbody>
@@ -64,13 +63,13 @@
             <button id="next-page-btn" disabled>Siguiente</button>
         </div>
         <div id="message-container"></div>
-        <div id="loading-modal" class="modal">
+        <div id="loading-modal" class="modal" hidden>
             <div class="modal-content">
                 <div class="spinner"></div>
                 <p>Cargando...</p>
             </div>
         </div>
-        <script type="module" src="pacientes.js"></script>
+    </div>
+    <script type="module" src="folderdrive.js"></script>
 </body>
-
 </html>

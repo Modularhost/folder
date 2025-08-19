@@ -1,4 +1,4 @@
-import { getFirestore, collection, getDocs, query, where, Timestamp } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js';
+import { getFirestore, collection, getDocs, query, Timestamp } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-firestore.js';
 import { getApps, initializeApp, getApp } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-app.js';
 import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-auth.js';
 import { getStorage, ref, uploadBytes, listAll, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-storage.js';
@@ -62,7 +62,7 @@ try {
         };
 
         Object.entries(elements).forEach(([key, el]) => {
-            if (!el) console.warn(`Elemento ${key} no encontrado en el DOM`);
+            if (!el) console.error(`Elemento ${key} no encontrado en el DOM`);
         });
 
         return elements;
@@ -72,9 +72,9 @@ try {
     let selectedEstado = '';
     let columnFilters = {};
     let currentPage = 1;
-    const recordsPerPage = 50; // Reducido de 100 a 50 para mejor rendimiento
+    const recordsPerPage = 50;
     let initialTableWidth = 0;
-    const fileCountCache = new Map(); // Caché para conteos de archivos
+    const fileCountCache = new Map();
 
     function showMessage(messageText, type = 'success') {
         const messageContainer = document.getElementById('message-container');
@@ -121,34 +121,34 @@ try {
         const user = auth.currentUser;
         if (!user) throw new Error('Usuario no autenticado');
 
-        const implantesQuery = query(
-            collection(db, 'pacientesimplantes'),
-            where('uid', '==', user.uid)
-        );
-        const consignacionQuery = query(
-            collection(db, 'pacientesconsignacion'),
-            where('uid', '==', user.uid)
-        );
+        console.log('Cargando registros para todos los usuarios');
 
-        // Ejecutar consultas en paralelo
+        const implantesQuery = collection(db, 'pacientesimplantes');
+        const consignacionQuery = collection(db, 'pacientesconsignacion');
+
         const [implantesSnapshot, consignacionSnapshot] = await Promise.all([
             getDocs(implantesQuery),
             getDocs(consignacionQuery)
         ]);
 
+        console.log('Documentos en pacientesimplantes:', implantesSnapshot.size);
+        console.log('Documentos en pacientesconsignacion:', consignacionSnapshot.size);
+
         const implantes = implantesSnapshot.docs.map(doc => ({
             id: doc.id,
             fuente: 'Implantes',
+            fechaCX: doc.data().fechaCX instanceof Timestamp ? doc.data().fechaCX : null,
             ...doc.data()
         }));
 
         const consignaciones = consignacionSnapshot.docs.map(doc => ({
             id: doc.id,
             fuente: 'Consignación',
+            fechaCX: doc.data().fechaCX instanceof Timestamp ? doc.data().fechaCX : null,
             ...doc.data()
         }));
 
-        return [...implantes, ...consignaciones].map(record => ({
+        const allRecords = [...implantes, ...consignaciones].map(record => ({
             id: record.id,
             fuente: record.fuente,
             admision: record.admision || '',
@@ -157,6 +157,9 @@ try {
             estado: record.estado || '',
             collection: record.fuente === 'Implantes' ? 'pacientesimplantes' : 'pacientesconsignacion'
         }));
+
+        console.log('Total de registros cargados:', allRecords.length);
+        return allRecords;
     }
 
     function getYearsAndMonths(records) {
@@ -195,7 +198,7 @@ try {
         filterYearSelect.value = years.includes(currentYear) ? currentYear.toString() : 'all';
     }
 
-    function populateMonthFilter(months, selectedMonth = '') {
+    function populateMonthFilter(months, selectedMonth = 'all') {
         const filterMonthSelect = document.getElementById('filter-month');
         if (!filterMonthSelect) return;
         const monthNames = [
@@ -214,25 +217,28 @@ try {
         ];
         const validMonths = Array.isArray(months) ? months : [];
         filterMonthSelect.innerHTML = `
-            <option value="" disabled selected>Seleccione un mes</option>
+            <option value="all">Todos</option>
             ${monthNames
                 .filter(month => validMonths.includes(parseInt(month.value)))
                 .map(month => `<option value="${month.value}">${month.name}</option>`)
                 .join('')}
         `;
-        filterMonthSelect.value = validMonths.includes(parseInt(selectedMonth)) ? selectedMonth : '';
+        filterMonthSelect.value = validMonths.includes(parseInt(selectedMonth)) ? selectedMonth : 'all';
     }
 
     function filterRecords(records, year, month, estado) {
-        if (month === '') return [];
-        return records.filter(record => {
-            if (!(record.fechaCX instanceof Timestamp) || isNaN(record.fechaCX.toDate().getTime())) return false;
+        console.log('Aplicando filtros:', { year, month, estado, columnFilters });
+        const filteredRecords = records.filter(record => {
+            if (!(record.fechaCX instanceof Timestamp) || isNaN(record.fechaCX.toDate().getTime())) {
+                console.warn('Registro sin fechaCX válida:', record);
+                return false;
+            }
             const date = record.fechaCX.toDate();
             date.setHours(0, 0, 0, 0);
             const recordYear = date.getFullYear();
             const recordMonth = date.getMonth() + 1;
             if (year !== 'all' && recordYear !== parseInt(year)) return false;
-            if (month && recordMonth !== parseInt(month)) return false;
+            if (month && month !== 'all' && recordMonth !== parseInt(month)) return false;
             if (estado && record.estado !== estado) return false;
             const fields = ['admision', 'nombrePaciente', 'fechaCX'];
             return Object.entries(columnFilters).every(([index, filterValue]) => {
@@ -252,6 +258,8 @@ try {
                 }
             });
         });
+        console.log('Registros después de filtrar:', filteredRecords.length);
+        return filteredRecords;
     }
 
     function renderEstadoButtons(records) {
@@ -274,7 +282,7 @@ try {
                 const filterYearSelect = document.getElementById('filter-year');
                 const filterMonthSelect = document.getElementById('filter-month');
                 const selectedYear = filterYearSelect?.value || 'all';
-                const selectedMonth = filterMonthSelect?.value || '';
+                const selectedMonth = filterMonthSelect?.value || 'all';
                 const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                 renderRecords(filteredRecords);
                 renderEstadoButtons(filteredRecords);
@@ -309,9 +317,11 @@ try {
     async function renderRecords(records) {
         const tableBody = document.querySelector('#combinados-table tbody');
         if (!tableBody) return;
+        console.log('Renderizando registros:', records.length);
         tableBody.innerHTML = '';
         if (records.length === 0) {
-            tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No hay datos para mostrar. Seleccione un mes para ver los registros.</td></tr>';
+            console.log('No hay registros para mostrar');
+            tableBody.innerHTML = '<tr><td colspan="4" class="text-center">No hay datos para mostrar.</td></tr>';
             return;
         }
         const sortedRecords = records.sort((a, b) => {
@@ -325,17 +335,18 @@ try {
         const startIndex = (currentPage - 1) * recordsPerPage;
         const endIndex = startIndex + recordsPerPage;
         const paginatedRecords = sortedRecords.slice(startIndex, endIndex);
+        console.log('Registros paginados:', paginatedRecords.length);
 
-        // Crear un DocumentFragment para optimizar la manipulación del DOM
         const fragment = document.createDocumentFragment();
         paginatedRecords.forEach(record => {
+            console.log('Renderizando registro:', record);
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${record.admision}</td>
                 <td>${record.nombrePaciente}</td>
                 <td>${formatDate(record.fechaCX, false)}</td>
                 <td>
-                    <i class="fas fa-folder folder-icon" data-id="${record.id}" data-collection="${record.collection}" data-nombre="${record.nombrePaciente}"></i>
+                    <i class="fas fa-folder folder-icon" data-id="${record.id}" data-collection="${record.collection}" data-nombre="${record.nombrePaciente}" title="Ver archivos"></i>
                     <span class="file-count" data-id="${record.id}" data-collection="${record.collection}">Cargando...</span>
                 </td>
             `;
@@ -343,14 +354,12 @@ try {
         });
         tableBody.appendChild(fragment);
 
-        // Configurar eventos de los íconos de carpeta
         document.querySelectorAll('.folder-icon').forEach(icon => {
             icon.addEventListener('click', handleFolderClick);
         });
         setupColumnFilters();
         setupResizeHandles();
 
-        // Cargar conteos de archivos en paralelo
         const fileCountPromises = paginatedRecords.map(async record => {
             const count = await getFileCount(record.id, record.collection);
             return { id: record.id, collection: record.collection, count };
@@ -394,7 +403,6 @@ try {
                     uploadFile(file, patientId, collectionName, filesList);
                 });
                 uploadInput.value = '';
-                // Actualizar el caché después de subir un archivo
                 fileCountCache.delete(`${patientId}-${collectionName}`);
             });
             uploadBtn.dataset.listener = 'true';
@@ -427,7 +435,6 @@ try {
                             .then(() => {
                                 listFiles(patientId, collectionName, filesList);
                                 showMessage('Archivo eliminado exitosamente');
-                                // Actualizar el caché después de eliminar un archivo
                                 fileCountCache.delete(`${patientId}-${collectionName}`);
                             })
                             .catch((error) => {
@@ -554,7 +561,7 @@ try {
                 const filterYearSelect = document.getElementById('filter-year');
                 const filterMonthSelect = document.getElementById('filter-month');
                 const selectedYear = filterYearSelect?.value || 'all';
-                const selectedMonth = filterMonthSelect?.value || '';
+                const selectedMonth = filterMonthSelect?.value || 'all';
                 const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                 renderRecords(filteredRecords);
                 renderEstadoButtons(filteredRecords);
@@ -591,7 +598,7 @@ try {
                     const filterYearSelect = document.getElementById('filter-year');
                     const filterMonthSelect = document.getElementById('filter-month');
                     const selectedYear = filterYearSelect?.value || 'all';
-                    const selectedMonth = filterMonthSelect?.value || '';
+                    const selectedMonth = filterMonthSelect?.value || 'all';
                     const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                     renderRecords(filteredRecords);
                     renderEstadoButtons(filteredRecords);
@@ -609,7 +616,7 @@ try {
                     const filterYearSelect = document.getElementById('filter-year');
                     const filterMonthSelect = document.getElementById('filter-month');
                     const selectedYear = filterYearSelect?.value || 'all';
-                    const selectedMonth = filterMonthSelect?.value || '';
+                    const selectedMonth = filterMonthSelect?.value || 'all';
                     const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                     renderRecords(filteredRecords);
                     renderEstadoButtons(filteredRecords);
@@ -621,7 +628,7 @@ try {
             });
 
             tableContainer.appendChild(container);
-            container.style.display = 'flex';
+            container.style.display = 'block';
             input.focus();
         }
 
@@ -743,7 +750,7 @@ try {
                     const filterYearSelect = document.getElementById('filter-year');
                     const filterMonthSelect = document.getElementById('filter-month');
                     const selectedYear = filterYearSelect?.value || 'all';
-                    const selectedMonth = filterMonthSelect?.value || '';
+                    const selectedMonth = filterMonthSelect?.value || 'all';
                     const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                     renderRecords(filteredRecords);
                     updatePagination(filteredRecords);
@@ -758,7 +765,7 @@ try {
                     const filterYearSelect = document.getElementById('filter-year');
                     const filterMonthSelect = document.getElementById('filter-month');
                     const selectedYear = filterYearSelect?.value || 'all';
-                    const selectedMonth = filterMonthSelect?.value || '';
+                    const selectedMonth = filterMonthSelect?.value || 'all';
                     const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
                     renderRecords(filteredRecords);
                     updatePagination(filteredRecords);
@@ -781,19 +788,20 @@ try {
             if (!preserveFilters) {
                 populateYearFilter(years);
                 selectedYear = filterYearSelect?.value || 'all';
-                populateMonthFilter(monthsByYear[selectedYear] || []);
-                selectedMonth = '';
-                if (filterMonthSelect) filterMonthSelect.value = '';
+                const currentMonth = (new Date().getMonth() + 1).toString();
+                populateMonthFilter(monthsByYear[selectedYear] || [], currentMonth);
+                selectedMonth = currentMonth;
+                if (filterMonthSelect) filterMonthSelect.value = currentMonth;
                 selectedEstado = '';
                 columnFilters = {};
             } else {
                 selectedYear = filterYearSelect?.value || 'all';
-                selectedMonth = filterMonthSelect?.value || '';
+                selectedMonth = filterMonthSelect?.value || (new Date().getMonth() + 1).toString();
                 populateMonthFilter(monthsByYear[selectedYear] || [], selectedMonth);
                 if (filterMonthSelect) {
-                    filterMonthSelect.value = (selectedMonth && monthsByYear[selectedYear]?.includes(parseInt(selectedMonth))) ? selectedMonth : '';
+                    filterMonthSelect.value = (selectedMonth && monthsByYear[selectedYear]?.includes(parseInt(selectedMonth))) ? selectedMonth : 'all';
                 }
-                selectedMonth = filterMonthSelect?.value || '';
+                selectedMonth = filterMonthSelect?.value || 'all';
             }
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
             await renderRecords(filteredRecords);
@@ -817,7 +825,7 @@ try {
             const months = getYearsAndMonths(allRecords).monthsByYear[selectedYear] || [];
             populateMonthFilter(months);
             selectedEstado = '';
-            const selectedMonth = filterMonthSelect.value || '';
+            const selectedMonth = filterMonthSelect.value || 'all';
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
             currentPage = 1;
             await renderRecords(filteredRecords);
