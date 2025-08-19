@@ -72,8 +72,9 @@ try {
     let selectedEstado = '';
     let columnFilters = {};
     let currentPage = 1;
-    const recordsPerPage = 100;
+    const recordsPerPage = 50; // Reducido de 100 a 50 para mejor rendimiento
     let initialTableWidth = 0;
+    const fileCountCache = new Map(); // Caché para conteos de archivos
 
     function showMessage(messageText, type = 'success') {
         const messageContainer = document.getElementById('message-container');
@@ -124,18 +125,23 @@ try {
             collection(db, 'pacientesimplantes'),
             where('uid', '==', user.uid)
         );
-        const implantesSnapshot = await getDocs(implantesQuery);
+        const consignacionQuery = query(
+            collection(db, 'pacientesconsignacion'),
+            where('uid', '==', user.uid)
+        );
+
+        // Ejecutar consultas en paralelo
+        const [implantesSnapshot, consignacionSnapshot] = await Promise.all([
+            getDocs(implantesQuery),
+            getDocs(consignacionQuery)
+        ]);
+
         const implantes = implantesSnapshot.docs.map(doc => ({
             id: doc.id,
             fuente: 'Implantes',
             ...doc.data()
         }));
 
-        const consignacionQuery = query(
-            collection(db, 'pacientesconsignacion'),
-            where('uid', '==', user.uid)
-        );
-        const consignacionSnapshot = await getDocs(consignacionQuery);
         const consignaciones = consignacionSnapshot.docs.map(doc => ({
             id: doc.id,
             fuente: 'Consignación',
@@ -279,6 +285,10 @@ try {
     }
 
     async function getFileCount(patientId, collectionName) {
+        const cacheKey = `${patientId}-${collectionName}`;
+        if (fileCountCache.has(cacheKey)) {
+            return fileCountCache.get(cacheKey);
+        }
         const user = auth.currentUser;
         if (!user) {
             return 0;
@@ -287,7 +297,9 @@ try {
         const folderRef = ref(storage, folderPath);
         try {
             const res = await listAll(folderRef);
-            return res.items.length;
+            const count = res.items.length;
+            fileCountCache.set(cacheKey, count);
+            return count;
         } catch (error) {
             console.warn(`Error al contar archivos para ${patientId}: ${error.message}`);
             return 0;
@@ -313,8 +325,10 @@ try {
         const startIndex = (currentPage - 1) * recordsPerPage;
         const endIndex = startIndex + recordsPerPage;
         const paginatedRecords = sortedRecords.slice(startIndex, endIndex);
-        for (const record of paginatedRecords) {
-            const fileCount = await getFileCount(record.id, record.collection);
+
+        // Crear un DocumentFragment para optimizar la manipulación del DOM
+        const fragment = document.createDocumentFragment();
+        paginatedRecords.forEach(record => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${record.admision}</td>
@@ -322,16 +336,32 @@ try {
                 <td>${formatDate(record.fechaCX, false)}</td>
                 <td>
                     <i class="fas fa-folder folder-icon" data-id="${record.id}" data-collection="${record.collection}" data-nombre="${record.nombrePaciente}"></i>
-                    <span class="file-count">${fileCount} archivo${fileCount !== 1 ? 's' : ''}</span>
+                    <span class="file-count" data-id="${record.id}" data-collection="${record.collection}">Cargando...</span>
                 </td>
             `;
-            tableBody.appendChild(row);
-        }
+            fragment.appendChild(row);
+        });
+        tableBody.appendChild(fragment);
+
+        // Configurar eventos de los íconos de carpeta
         document.querySelectorAll('.folder-icon').forEach(icon => {
             icon.addEventListener('click', handleFolderClick);
         });
         setupColumnFilters();
         setupResizeHandles();
+
+        // Cargar conteos de archivos en paralelo
+        const fileCountPromises = paginatedRecords.map(async record => {
+            const count = await getFileCount(record.id, record.collection);
+            return { id: record.id, collection: record.collection, count };
+        });
+        const fileCounts = await Promise.all(fileCountPromises);
+        fileCounts.forEach(({ id, collection, count }) => {
+            const span = tableBody.querySelector(`.file-count[data-id="${id}"][data-collection="${collection}"]`);
+            if (span) {
+                span.textContent = `${count} archivo${count !== 1 ? 's' : ''}`;
+            }
+        });
     }
 
     function handleFolderClick(e) {
@@ -364,6 +394,8 @@ try {
                     uploadFile(file, patientId, collectionName, filesList);
                 });
                 uploadInput.value = '';
+                // Actualizar el caché después de subir un archivo
+                fileCountCache.delete(`${patientId}-${collectionName}`);
             });
             uploadBtn.dataset.listener = 'true';
         }
@@ -395,6 +427,8 @@ try {
                             .then(() => {
                                 listFiles(patientId, collectionName, filesList);
                                 showMessage('Archivo eliminado exitosamente');
+                                // Actualizar el caché después de eliminar un archivo
+                                fileCountCache.delete(`${patientId}-${collectionName}`);
                             })
                             .catch((error) => {
                                 showMessage('Error al eliminar archivo: ' + error.message, 'error');
@@ -448,7 +482,7 @@ try {
             element = document.createElement('iframe');
             element.src = url;
             element.style.width = '100%';
-            element.style.height = '90vh'; // Aumentado para visualizar mejor
+            element.style.height = '90vh';
         } else {
             element = document.createElement('img');
             element.src = url;
@@ -476,7 +510,7 @@ try {
             initialTableWidth = initialWidths.reduce((sum, w) => sum + parseInt(w), 0);
             table.style.minWidth = `${initialTableWidth}px`;
         }
-}
+    }
 
     function setupColumnFilters() {
         const filterIcons = document.querySelectorAll('.filter-icon');
@@ -762,7 +796,7 @@ try {
                 selectedMonth = filterMonthSelect?.value || '';
             }
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
-            renderRecords(filteredRecords);
+            await renderRecords(filteredRecords);
             renderEstadoButtons(filteredRecords);
             updatePagination(filteredRecords);
             setupPaginationListeners();
@@ -778,7 +812,7 @@ try {
         const filterYearSelect = document.getElementById('filter-year');
         const filterMonthSelect = document.getElementById('filter-month');
         if (!filterYearSelect || !filterMonthSelect) return;
-        filterYearSelect.addEventListener('change', () => {
+        filterYearSelect.addEventListener('change', async () => {
             const selectedYear = filterYearSelect.value;
             const months = getYearsAndMonths(allRecords).monthsByYear[selectedYear] || [];
             populateMonthFilter(months);
@@ -786,17 +820,17 @@ try {
             const selectedMonth = filterMonthSelect.value || '';
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
             currentPage = 1;
-            renderRecords(filteredRecords);
+            await renderRecords(filteredRecords);
             renderEstadoButtons(filteredRecords);
             updatePagination(filteredRecords);
         });
-        filterMonthSelect.addEventListener('change', () => {
+        filterMonthSelect.addEventListener('change', async () => {
             const selectedYear = filterYearSelect.value;
             const selectedMonth = filterMonthSelect.value;
             selectedEstado = '';
             const filteredRecords = filterRecords(allRecords, selectedYear, selectedMonth, selectedEstado);
             currentPage = 1;
-            renderRecords(filteredRecords);
+            await renderRecords(filteredRecords);
             renderEstadoButtons(filteredRecords);
             updatePagination(filteredRecords);
         });
@@ -830,13 +864,11 @@ try {
             `;
             document.body.appendChild(viewerModal);
         }
-        // Setup close listeners
         document.querySelectorAll('.modal .close').forEach(close => {
             close.addEventListener('click', () => {
                 close.closest('.modal').style.display = 'none';
             });
         });
-        // Click outside to close
         window.addEventListener('click', (e) => {
             if (e.target.classList.contains('modal')) {
                 e.target.style.display = 'none';

@@ -240,7 +240,7 @@ body.dark-mode #combinados-table {
 }
 
 #combinados-table tr {
-    height: 18px;
+    height: 16px;
 }
 
 #combinados-table th,
@@ -252,7 +252,7 @@ body.dark-mode #combinados-table {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    height: 18px;
+    height: 16px;
     line-height: 16px;
 }
 
