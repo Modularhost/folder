@@ -521,7 +521,7 @@ loginForm.addEventListener('submit', async (e) => {
     }
 
     const email = usernameSnap.data().email;
-    const userId = usernameSnap.data().userId;
+    const userId = usernameSnap.data().uid;
 
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
