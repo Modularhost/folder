@@ -4,13 +4,13 @@ import { getAuth, onAuthStateChanged } from 'https://www.gstatic.com/firebasejs/
 import { getStorage, ref, uploadBytes, listAll, getDownloadURL, deleteObject } from 'https://www.gstatic.com/firebasejs/10.12.1/firebase-storage.js';
 
 const firebaseConfig = {
-  apiKey: "AIzaSyDuF7p0X6N8IE19Bqt78LQAp805tMl84Ds",
-  authDomain: "modular-app-16bd6.firebaseapp.com",
-  projectId: "modular-app-16bd6",
-  storageBucket: "modular-app-16bd6.firebasestorage.app",
-  messagingSenderId: "1006327040835",
-  appId: "1:1006327040835:web:b8b4f510da46514a3d3df6",
-  measurementId: "G-GVKBWL9GT9"
+    apiKey: "AIzaSyDuF7p0X6N8IE19Bqt78LQAp805tMl84Ds",
+    authDomain: "modular-app-16bd6.firebaseapp.com",
+    projectId: "modular-app-16bd6",
+    storageBucket: "modular-app-16bd6.firebasestorage.app",
+    messagingSenderId: "1006327040835",
+    appId: "1:1006327040835:web:b8b4f510da46514a3d3df6",
+    measurementId: "G-GVKBWL9GT9"
 };
 
 try {
@@ -460,7 +460,7 @@ try {
     }
 
     function initializeColumnWidths() {
-        const initialWidths = ['100px', '150px', '100px', '150px']; // Ajustado para dar espacio al conteo
+        const initialWidths = ['250px', '350px', '200px', '300px']; // Ajustado a los nuevos anchos
         const headers = document.querySelectorAll('#combinados-table th');
         const table = document.getElementById('combinados-table');
         headers.forEach((header, index) => {
@@ -510,7 +510,7 @@ try {
 
             const container = document.createElement('div');
             container.className = 'filter-container';
-            
+
             const clearButton = document.createElement('button');
             clearButton.className = 'clear-filter-button';
             clearButton.textContent = 'Borrar Filtro';
@@ -618,7 +618,7 @@ try {
                 e.preventDefault();
                 startX = e.clientX;
                 startWidth = parseFloat(getComputedStyle(th).width) || th.getBoundingClientRect().width;
-                columnWidths = Array.from(thElements).map(header => 
+                columnWidths = Array.from(thElements).map(header =>
                     parseFloat(getComputedStyle(header).width) || header.getBoundingClientRect().width
                 );
                 resizeHandle.classList.add('active');
