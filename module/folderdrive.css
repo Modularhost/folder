@@ -91,7 +91,6 @@ body.dark-mode .divider {
     flex-direction: column;
     gap: 6px;
     margin-bottom: 10px;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 body.dark-mode .form-container {
@@ -131,17 +130,14 @@ body.dark-mode .filter-container-main {
     transition: all 0.2s ease;
     height: 32px;
     line-height: 18px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 .estado-button:hover {
     background-color: var(--button-hover-bg);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .estado-button.active {
     background-color: var(--primary);
-    box-shadow: 0 2px 6px rgba(43, 108, 176, 0.3);
 }
 
 body.dark-mode .estado-button {
@@ -183,7 +179,6 @@ body.dark-mode .form-group label {
     color: var(--text-color);
     height: 36px;
     transition: all 0.2s ease;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 body.dark-mode .form-group input,
@@ -197,13 +192,6 @@ body.dark-mode .form-group select {
 .form-group select:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 8px rgba(43, 108, 176, 0.3);
-}
-
-body.dark-mode .form-group input:focus,
-body.dark-mode .form-group select:focus {
-    border-color: var(--dark-primary);
-    box-shadow: 0 0 8px rgba(99, 179, 237, 0.3);
 }
 
 .form-group input[readonly],
@@ -225,7 +213,6 @@ body.dark-mode .form-group select:disabled {
     overflow: auto;
     border: 1px solid var(--border-color);
     background-color: var(--bg-color);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 body.dark-mode .table-container {
@@ -350,7 +337,6 @@ body.dark-mode #combinados-table th .resize-handle.active {
 #combinados-table tbody tr:hover,
 #combinados-table tbody tr:hover td {
     background-color: var(--hover-bg);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.2s ease;
 }
 
@@ -435,7 +421,6 @@ body.dark-mode .filter-active {
     background-color: var(--modal-bg);
     border: 1px solid var(--primary);
     padding: 10px;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
     z-index: 20;
     display: none;
     animation: slideIn 0.3s ease-out;
@@ -517,12 +502,10 @@ body.dark-mode .filter-container input {
 .filter-container input:focus {
     outline: none;
     border-color: var(--primary);
-    box-shadow: 0 0 6px rgba(43, 108, 176, 0.3);
 }
 
 body.dark-mode .filter-container input:focus {
     border-color: var(--dark-primary);
-    box-shadow: 0 0 6px rgba(99, 179, 237, 0.3);
 }
 
 @keyframes slideIn {
@@ -543,7 +526,6 @@ body.dark-mode .filter-container input:focus {
     gap: 12px;
     padding: 12px;
     background-color: var(--bg-color);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     margin-top: 12px;
 }
 
@@ -560,7 +542,6 @@ body.dark-mode .pagination {
     background-color: var(--button-bg);
     color: white;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 body.dark-mode .pagination button {
@@ -569,7 +550,6 @@ body.dark-mode .pagination button {
 
 .pagination button:hover:not(:disabled) {
     background-color: var(--button-hover-bg);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
 }
 
 body.dark-mode .pagination button:hover:not(:disabled) {
@@ -580,7 +560,6 @@ body.dark-mode .pagination button:hover:not(:disabled) {
     background-color: var(--disabled-bg);
     cursor: not-allowed;
     opacity: 0.6;
-    box-shadow: none;
 }
 
 body.dark-mode .pagination button:disabled {
@@ -626,7 +605,6 @@ body.dark-mode .pagination #page-info {
 
 .modal-content {
     background-color: var(--modal-bg);
-    box-shadow: 0 16px 32px rgba(0, 0, 0, 0.3);
     width: 90%;
     max-width: 600px;
     max-height: 75vh;
@@ -702,7 +680,6 @@ body.dark-mode .modal .close:hover {
 
 #files-modal .modal-content {
     background-color: var(--modal-bg);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
     width: 90%;
     max-width: 600px;
     max-height: 75vh;
@@ -775,7 +752,6 @@ body.dark-mode #files-modal input[type="file"]:hover {
     background-color: var(--primary);
     color: white;
     transition: all 0.2s ease;
-    box-shadow: 0 4px 12px rgba(43, 108, 176, 0.3);
     align-self: center;
     min-width: 120px;
     text-transform: uppercase;
@@ -783,17 +759,14 @@ body.dark-mode #files-modal input[type="file"]:hover {
 
 #files-modal #upload-btn:hover {
     background-color: var(--primary-hover);
-    box-shadow: 0 6px 16px rgba(43, 108, 176, 0.4);
 }
 
 body.dark-mode #files-modal #upload-btn {
     background-color: var(--dark-primary);
-    box-shadow: 0 4px 12px rgba(99, 179, 237, 0.3);
 }
 
 body.dark-mode #files-modal #upload-btn:hover {
     background-color: var(--dark-primary-hover);
-    box-shadow: 0 6px 16px rgba(99, 179, 237, 0.4);
 }
 
 #files-modal #files-list {
@@ -849,12 +822,10 @@ body.dark-mode #files-modal #files-list li:hover {
     background-color: #ef4444;
     color: white;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
 }
 
 #files-modal #files-list li button:hover {
     background-color: #dc2626;
-    box-shadow: 0 4px 8px rgba(239, 68, 68, 0.4);
 }
 
 body.dark-mode #files-modal #files-list li button {
@@ -933,7 +904,6 @@ body.dark-mode #loading-modal .modal-content p {
     border: 1px solid var(--success-border);
     color: var(--text-color);
     padding: 10px 14px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
     font-size: 13px;
     font-weight: 500;
     opacity: 1;
