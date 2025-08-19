@@ -128,7 +128,7 @@ body.dark-mode .filter-container-main {
     background-color: var(--button-bg);
     color: white;
     transition: all 0.2s ease;
-    height: 32px;
+    height: 26px;
     line-height: 18px;
 }
 
@@ -177,7 +177,7 @@ body.dark-mode .form-group label {
     font-size: 13px;
     background-color: var(--input-bg);
     color: var(--text-color);
-    height: 36px;
+    height: 28px;
     transition: all 0.2s ease;
 }
 
@@ -224,7 +224,7 @@ body.dark-mode .table-container {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    font-size: 13px;
+    font-size: 12px;
     background-color: var(--bg-color);
     table-layout: fixed;
 }
@@ -289,7 +289,7 @@ body.dark-mode #combinados-table td {
     background-color: var(--header-bg);
     color: var(--text-color);
     font-weight: 600;
-    font-size: 13px;
+    font-size: 12px;
     position: relative;
     background: linear-gradient(135deg, var(--header-bg) 0%, #f1f5f9 100%);
 }
@@ -373,7 +373,7 @@ body.dark-mode .filter-icon:hover {
     color: var(--text-color);
     transition: all 0.2s ease;
     margin-right: 6px;
-    font-size: 14px;
+    font-size: 13px;
 }
 
 body.dark-mode .folder-icon {
