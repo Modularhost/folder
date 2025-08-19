@@ -89,7 +89,7 @@ body.dark-mode .divider {
     border: 1px solid var(--border-color);
     display: flex;
     flex-direction: column;
-    gap: 6px; /* Reducido de 8px */
+    gap: 6px; 
     margin-bottom: 10px; /* Reducido de 16px */
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
@@ -114,7 +114,7 @@ body.dark-mode .filter-container-main {
 .estado-buttons {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px; /* Reducido de 8px */
+    gap: 6px; 
     align-items: center;
     justify-content: flex-start;
     margin-bottom: 0;
@@ -366,7 +366,7 @@ body.dark-mode #combinados-table tbody tr:hover td {
 
 .filter-icon {
     display: inline-block;
-    margin-left: 6px; /* Reducido de 8px */
+    margin-left: 6px; 
     cursor: pointer;
     width: 12px; /* Reducido de 14px */
     height: 12px; /* Reducido de 14px */
@@ -392,7 +392,7 @@ body.dark-mode .filter-icon:hover {
     cursor: pointer;
     color: var(--text-color);
     transition: all 0.2s ease;
-    margin-right: 6px; /* Reducido de 8px */
+    margin-right: 6px; 
     font-size: 14px; /* Reducido de 16px */
 }
 
@@ -412,7 +412,7 @@ body.dark-mode .folder-icon:hover {
 .file-count {
     font-size: 11px; /* Reducido de 12px */
     color: var(--text-color);
-    margin-left: 6px; /* Reducido de 8px */
+    margin-left: 6px; 
     font-weight: 500;
 }
 
@@ -448,7 +448,7 @@ body.dark-mode .filter-active {
     animation: slideIn 0.3s ease-out;
     display: flex;
     flex-direction: column;
-    gap: 6px; /* Reducido de 8px */
+    gap: 6px; 
     min-height: 80px; /* Reducido de 100px */
     min-width: 180px; /* Reducido de 200px */
 }
@@ -990,10 +990,10 @@ body.dark-mode .message.error {
 }
 
 .spinner {
-    width: 32px; /* Reducido de 40px */
-    height: 32px; /* Reducido de 40px */
-    border: 3px solid var(--border-color); /* Reducido de 4px */
-    border-top: 3px solid var(--primary); /* Reducido de 4px */
+    width: 32px; 
+    height: 32px; 
+    border: 3px solid var(--border-color);
+    border-top: 3px solid var(--primary);
     border-radius: 50%;
     animation: spin 1s linear infinite;
 }
@@ -1008,11 +1008,10 @@ body.dark-mode .spinner {
     100% { transform: rotate(360deg); }
 }
 
-/* Scrollbar personalizada */
 .table-container::-webkit-scrollbar,
 #files-modal #files-list::-webkit-scrollbar {
-    width: 6px; /* Reducido de 8px */
-    height: 6px; /* Reducido de 8px */
+    width: 6px; 
+    height: 6px; 
 }
 
 .table-container::-webkit-scrollbar-track,
@@ -1072,7 +1071,7 @@ body.dark-mode #files-modal #files-list::-webkit-scrollbar-thumb:hover {
 
     .estado-buttons {
         justify-content: center;
-        margin-top: 6px; /* Reducido de 8px */
+        margin-top: 6px; 
     }
 
     .estado-button {
